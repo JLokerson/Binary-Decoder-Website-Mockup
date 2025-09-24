@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Binary Decoder Mockup</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.1/dist/tesseract.min.js"></script>
+</head>
+<body> 
+    <header>
+        <h1>Binary Decoder Mockup</h1>
+    </header>
+    <div class="description">
+        <p>
+            This webpage uses your phone's camera or images to scan binary and converts it to ASCII text in real time. 
+        <ul>
+            <li>Camera access via WebRTC (getUserMedia)</li>
+            <li>OCR powered by Tesseract.js (in browser)</li>
+            <li>Real-time binary to ASCII conversion</li>
+        </ul>
+    </div>
+    <!-- Selection Menu -->
+    <div class="selection-menu" id="selectionMenu">
+        <button class="option-btn" id="takePhotoBtn">Take a Photo</button>
+        <button class="option-btn" id="insertPhotoBtn">Insert a Photo</button>
+        <button class="option-btn" id="scanCameraBtn">Scan from Camera Feed</button>
+    </div>
+    <!-- Main Area (hidden until option selected) -->
+    <div class="main-area" id="mainArea" style="display:none;">
+        <button class="back-btn" id="backBtn">Back</button>
+        <div class="side-by-side">
+            <div class="image-area" id="imageArea">
+                <video id="video" autoplay playsinline muted style="display:none;"></video>
+                <canvas id="photoCanvas" style="display:none;"></canvas>
+                <img id="uploadedImg" style="display:none; max-width:100%;" />
+                <canvas id="processedCanvas" style="display:none; max-width:100%; border:1px solid #aaa;"></canvas>
+                <button id="toggleProcessedBtn" class="option-btn" style="display:none; margin-top:8px;">Show Processed Image</button>
+            </div>
+            <div class="output-area" id="outputArea">
+                <strong style="font-size:1.3em;">Decoded Text:</strong>
+                <pre id="decodedText" style="font-size:1.2em;">// ...binary will appear here...</pre>
+            </div>
+        </div>
+    </div>
+    <!-- File input for image upload (hidden) -->
+    <input type="file" id="fileInput" accept="image/*" style="display:none;" />
+    <script>
+        // New UI elements
+        const selectionMenu = document.getElementById('selectionMenu');
+        const mainArea = document.getElementById('mainArea');
+        const takePhotoBtn = document.getElementById('takePhotoBtn');
+        const insertPhotoBtn = document.getElementById('insertPhotoBtn');
+        const scanCameraBtn = document.getElementById('scanCameraBtn');
+        const backBtn = document.getElementById('backBtn');
+        const photoCanvas = document.getElementById('photoCanvas');
+        const uploadedImg = document.getElementById('uploadedImg');
+        const fileInput = document.getElementById('fileInput');
+        const video = document.getElementById('video');
+        const decodedText = document.getElementById('decodedText');
+        const processedCanvas = document.getElementById('processedCanvas');
+        const toggleProcessedBtn = document.getElementById('toggleProcessedBtn');
+        let ocrInterval = null;
+        let currentMode = null;
+        let processedCanvasVisible = false;
+
+        // Helper: Convert binary string to ASCII (more tolerant)
+        function binaryToAscii(binaryStr, printableOnly = false) {
+            // Replace common OCR mistakes: l, I, O with 1 and 0
+            let cleaned = binaryStr.replace(/[lI]/g, '1').replace(/[O]/g, '0');
+            // Show raw OCR output for debugging
+            const debugArea = document.getElementById('outputArea');
+            let debugPre = document.getElementById
+            // Split by whitespace, filter only valid 8-char binary words
+            const words = cleaned.split(/\s+/);
+            const binaries = words.filter(w => /^[01]{8}$/.test(w));
+            const ignored = words.filter(w => w.length === 8 && !/^[01]{8}$/.test(w));
+            if (ignored.length > 0) {
+                console.log("Ignored non-binary 8-char words:", ignored);
+            }
+            if (binaries.length === 0) {
+                console.log("No valid 8-bit binary groups found.");
+                return '';
+            }
+            let ascii = binaries.map(bin => {
+                const charCode = parseInt(bin, 2);
+                const char = String.fromCharCode(charCode);
+                return char;
+            }).join('');
+            if (printableOnly) {
+                // Filter to printable ASCII (32-126)
+                ascii = ascii.split('').filter(c => {
+                    const code = c.charCodeAt(0);
+                    return code >= 32 && code <= 126;
+                }).join('');
+            }
+            console.log("Final ASCII output:", ascii);
+            return ascii;
+        }
+
+        // Hide main area, show selection menu
+        function showSelectionMenu() {
+            mainArea.style.display = 'none';
+            selectionMenu.style.display = 'flex';
+            video.style.display = 'none';
+            photoCanvas.style.display = 'none';
+            uploadedImg.style.display = 'none';
+            decodedText.textContent = '// ...binary will appear here...';
+            if (ocrInterval) clearInterval(ocrInterval);
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            // Hide capture button if present
+            const captureBtn = document.getElementById('captureBtn');
+            if (captureBtn) captureBtn.style.display = 'none';
+        }
+        // Show main area, hide selection menu
+        function showMainArea(mode) {
+            selectionMenu.style.display = 'none';
+            mainArea.style.display = 'block';
+            currentMode = mode;
+        }
+        // Take Photo Mode
+        takePhotoBtn.onclick = async () => {
+            showMainArea('photo');
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    // Try recommended facingMode first
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                    video.srcObject = stream;
+                    video.style.display = 'block';
+                    photoCanvas.style.display = 'none';
+                    uploadedImg.style.display = 'none';
+                    decodedText.textContent = '// ...binary will appear here...';
+                    // Add "Capture" button
+                    let btn = document.getElementById('captureBtn');
+                    if (!btn) {
+                        btn = document.createElement('button');
+                        btn.id = 'captureBtn';
+                        btn.textContent = 'Capture Photo';
+                        btn.className = 'option-btn';
+                        btn.onclick = () => {
+                            photoCanvas.width = video.videoWidth || 640;
+                            photoCanvas.height = video.videoHeight || 480;
+                            photoCanvas.getContext('2d').drawImage(video, 0, 0, photoCanvas.width, photoCanvas.height);
+                            photoCanvas.style.display = 'block';
+                            video.style.display = 'none';
+                            btn.style.display = 'none';
+                            if (video.srcObject) {
+                                video.srcObject.getTracks().forEach(track => track.stop());
+                                video.srcObject = null;
+                            }
+                            runOcrOnCanvas(photoCanvas);
+                        };
+                        mainArea.insertBefore(btn, mainArea.firstChild.nextSibling);
+                    } else {
+                        btn.style.display = 'block';
+                    }
+                } catch (err) {
+                    // Fallback to any camera
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        video.srcObject = stream;
+                        video.style.display = 'block';
+                        photoCanvas.style.display = 'none';
+                        uploadedImg.style.display = 'none';
+                        decodedText.textContent = '// ...binary will appear here...';
+                        let btn = document.getElementById('captureBtn');
+                        if (!btn) {
+                            btn = document.createElement('button');
+                            btn.id = 'captureBtn';
+                            btn.textContent = 'Capture Photo';
+                            btn.className = 'option-btn';
+                            btn.onclick = () => {
+                                photoCanvas.width = video.videoWidth || 640;
+                                photoCanvas.height = video.videoHeight || 480;
+                                photoCanvas.getContext('2d').drawImage(video, 0, 0, photoCanvas.width, photoCanvas.height);
+                                photoCanvas.style.display = 'block';
+                                video.style.display = 'none';
+                                btn.style.display = 'none';
+                                if (video.srcObject) {
+                                    video.srcObject.getTracks().forEach(track => track.stop());
+                                    video.srcObject = null;
+                                }
+                                runOcrOnCanvas(photoCanvas);
+                            };
+                            mainArea.insertBefore(btn, mainArea.firstChild.nextSibling);
+                        } else {
+                            btn.style.display = 'block';
+                        }
+                    } catch (err2) {
+                        alert('Camera access denied or not available.');
+                        showSelectionMenu();
+                    }
+                }
+            }
+        };
+        // Insert Photo Mode
+        insertPhotoBtn.onclick = () => {
+            showMainArea('upload');
+            video.style.display = 'none';
+            photoCanvas.style.display = 'none';
+            uploadedImg.style.display = 'none';
+            decodedText.textContent = '// ...binary will appear here...';
+            fileInput.value = '';
+            fileInput.click();
+        };
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    uploadedImg.src = ev.target.result;
+                    uploadedImg.style.display = 'block';
+                    photoCanvas.style.display = 'none';
+                    video.style.display = 'none';
+                    runOcrOnImage(uploadedImg);
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        // Scan from Camera Feed Mode
+        scanCameraBtn.onclick = async () => {
+            showMainArea('live');
+            video.style.display = 'block';
+            photoCanvas.style.display = 'none';
+            uploadedImg.style.display = 'none';
+            decodedText.textContent = '// ...binary will appear here...';
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                    video.srcObject = stream;
+                    startOcr();
+                } catch (err) {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        video.srcObject = stream;
+                        startOcr();
+                    } catch (err2) {
+                        alert('Camera access denied or not available.');
+                        showSelectionMenu();
+                    }
+                }
+            } else {
+                alert('Camera not supported in this browser. Make sure you are using HTTPS and a modern browser.');
+                showSelectionMenu();
+            }
+        };
+        // Back button
+        backBtn.onclick = () => {
+            showSelectionMenu();
+        };
+        // Toggle processed image visibility
+        toggleProcessedBtn.onclick = () => {
+            processedCanvasVisible = !processedCanvasVisible;
+            processedCanvas.style.display = processedCanvasVisible ? 'block' : 'none';
+            toggleProcessedBtn.textContent = processedCanvasVisible ? 'Hide Processed Image' : 'Show Processed Image';
+        };
+        // Helper: Grayscale conversion
+        function preprocessCanvas(canvas, debugCanvas) {
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            // Grayscale conversion
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                let avg = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
+                imageData.data[i] = imageData.data[i+1] = imageData.data[i+2] = avg;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            // If debugging, copy to debugCanvas
+            if (debugCanvas) {
+                debugCanvas.width = canvas.width;
+                debugCanvas.height = canvas.height;
+                debugCanvas.getContext('2d').putImageData(imageData, 0, 0);
+                toggleProcessedBtn.style.display = 'inline-block';
+                processedCanvas.style.display = processedCanvasVisible ? 'block' : 'none';
+                toggleProcessedBtn.textContent = processedCanvasVisible ? 'Hide Processed Image' : 'Show Processed Image';
+            } else {
+                toggleProcessedBtn.style.display = 'none';
+                processedCanvas.style.display = 'none';
+            }
+        }
+        // Helper: Minimum image/canvas size for OCR
+        function isImageLargeEnough(width, height, minWidth = 3, minHeight = 36) {
+            return width >= minWidth && height >= minHeight;
+        }
+        // OCR for still image (canvas) with preprocessing
+        function runOcrOnCanvas(canvas) {
+            if (!isImageLargeEnough(canvas.width, canvas.height)) {
+                decodedText.textContent = '// Image too small to scan!';
+                console.warn(`Image too small to scale!! (${canvas.width}x${canvas.height} vs min width of 3)`);
+                return;
+            }
+            decodedText.textContent = 'Scanning...';
+            const scale = 2;
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width * scale;
+            tempCanvas.height = canvas.height * scale;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+            preprocessCanvas(tempCanvas, processedCanvas);
+            const imageDataUrl = tempCanvas.toDataURL('image/png');
+            Tesseract.recognize(imageDataUrl, 'eng', {
+                logger: m => { console.log("Tesseract progress:", m); },
+                config: {
+                    tessedit_char_whitelist: '01IlO ',
+                    classify_bln_numeric_mode: 1
+                }
+            }).then(result => {
+                console.log("Tesseract OCR result:", result.data.text);
+                // Show raw OCR output for debugging
+                console.log("Raw OCR output:", result.data.text);
+                const binaryStr = result.data.text.replace(/\s+/g, ' ').trim();
+                console.log("Processed binary string:", binaryStr);
+                const ascii = binaryToAscii(binaryStr);
+                decodedText.textContent = ascii || '// No valid binary detected';
+            }).catch((err) => {
+                console.error("OCR error:", err);
+                decodedText.textContent = '// OCR error';
+            });
+        }
+        // OCR for uploaded image with preprocessing
+        function runOcrOnImage(img) {
+            img.onload = function() {
+                const scale = 2;
+                const w = img.naturalWidth * scale;
+                const h = img.naturalHeight * scale;
+                if (!isImageLargeEnough(w, h)) {
+                    decodedText.textContent = '// Image too small to scan!';
+                    console.warn(`Image too small to scale!! (${img.naturalWidth}x${img.naturalHeight} vs min width of 3)`);
+                    return;
+                }
+                photoCanvas.width = w;
+                photoCanvas.height = h;
+                const ctx = photoCanvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, photoCanvas.width, photoCanvas.height);
+                photoCanvas.style.display = 'none';
+                preprocessCanvas(photoCanvas, processedCanvas);
+                const imageDataUrl = photoCanvas.toDataURL('image/png');
+                Tesseract.recognize(imageDataUrl, 'eng', {
+                    logger: m => { console.log("Tesseract progress:", m); },
+                    config: {
+                        tessedit_char_whitelist: '01IlO ',
+                        classify_bln_numeric_mode: 1
+                    }
+                }).then(result => {
+                    console.log("Tesseract OCR result:", result.data.text);
+                    console.log("Raw OCR output:", result.data.text);
+                    const binaryStr = result.data.text.replace(/\s+/g, ' ').trim();
+                    const ascii = binaryToAscii(binaryStr);
+                    if (ascii) {
+                        decodedText.textContent = ascii;
+                    } else {
+                        decodedText.textContent = '// No valid binary detected';
+                    }
+                }).catch((err) => {
+                    console.error("OCR error: Could not read binary from image.", err);
+                    decodedText.textContent = '// OCR error: Could not read binary from image.';
+                });
+            };
+            if (img.complete) {
+                img.onload();
+            }
+        }
+        // Live video OCR
+        function startOcr() {
+            const canvas = document.createElement('canvas');
+            const squareSize = 640;
+            canvas.width = squareSize;
+            canvas.height = squareSize;
+            const ctx = canvas.getContext('2d');
+            ocrInterval = setInterval(async () => {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const vw = video.videoWidth || 640;
+                    const vh = video.videoHeight || 480;
+                    if (!isImageLargeEnough(vw, vh)) {
+                        decodedText.textContent = '// Camera image too small!';
+                        console.warn(`Image too small to scale!! (${vw}x${vh} vs min width of 3)`);
+                        return;
+                    }
+                    const sx = Math.floor((vw - squareSize) / 2);
+                    const sy = Math.floor((vh - squareSize) / 2);
+                    ctx.drawImage(video, sx, sy, squareSize, squareSize, 0, 0, squareSize, squareSize);
+                    preprocessCanvas(canvas, processedCanvas);
+                    const imageDataUrl = canvas.toDataURL('image/png');
+                    decodedText.textContent = "Scanning...";
+                    try {
+                        const result = await Tesseract.recognize(imageDataUrl, 'eng', {
+                            logger: m => { console.log("Tesseract progress:", m); },
+                            config: {
+                                tessedit_char_whitelist: '01IlO ',
+                                classify_bln_numeric_mode: 1
+                            }
+                        });
+                        console.log("Tesseract OCR result:", result.data.text);
+                        console.log("Raw OCR output:", result.data.text);
+                        const binaryStr = result.data.text.replace(/\s+/g, ' ').trim();
+                        const ascii = binaryToAscii(binaryStr);
+                        decodedText.textContent = ascii || "// No valid binary detected";
+                    } catch (err) {
+                        console.error("OCR error:", err);
+                        decodedText.textContent = "// OCR error";
+                    }
+                }
+            }, 1000); 
+        }
+        window.onload = showSelectionMenu;
+    </script>
+</body>
+</html>
