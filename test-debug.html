@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Binary OCR Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; border: 1px solid #ccc; padding: 15px; }
+        canvas { border: 1px solid #333; margin: 10px; }
+        .binary-output { font-family: monospace; background: #f0f0f0; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Binary OCR Debug Test</h1>
+    
+    <div class="debug-section">
+        <h2>Test Images</h2>
+        <input type="file" id="fileInput" accept="image/*">
+        <button id="testBtn">Test OCR</button>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Image Processing Steps</h2>
+        <div>
+            <label>Original:</label><br>
+            <canvas id="originalCanvas"></canvas>
+        </div>
+        <div>
+            <label>Processed:</label><br>
+            <canvas id="processedCanvas"></canvas>
+        </div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>OCR Results</h2>
+        <div>
+            <label>Raw OCR Text:</label>
+            <div id="rawText" class="binary-output"></div>
+        </div>
+        <div>
+            <label>Extracted Binary:</label>
+            <div id="extractedBinary" class="binary-output"></div>
+        </div>
+        <div>
+            <label>Final ASCII:</label>
+            <div id="finalAscii" class="binary-output"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/tesseract.js@v5.0.1/dist/tesseract.min.js"></script>
+    <script src="binary-ocr-training.js"></script>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const testBtn = document.getElementById('testBtn');
+        const originalCanvas = document.getElementById('originalCanvas');
+        const processedCanvas = document.getElementById('processedCanvas');
+        const rawText = document.getElementById('rawText');
+        const extractedBinary = document.getElementById('extractedBinary');
+        const finalAscii = document.getElementById('finalAscii');
+        
+        const binaryTraining = new BinaryOCRTraining();
+        
+        testBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select an image file');
+                return;
+            }
+            
+            // Load image
+            const img = new Image();
+            img.onload = async () => {
+                // Draw original
+                originalCanvas.width = img.width;
+                originalCanvas.height = img.height;
+                const originalCtx = originalCanvas.getContext('2d');
+                originalCtx.drawImage(img, 0, 0);
+                
+                // Create working canvas
+                const workingCanvas = document.createElement('canvas');
+                workingCanvas.width = img.width;
+                workingCanvas.height = img.height;
+                const workingCtx = workingCanvas.getContext('2d');
+                workingCtx.drawImage(img, 0, 0);
+                
+                // Apply preprocessing
+                binaryTraining.preprocessImageForOCR(workingCanvas, processedCanvas);
+                
+                // Get processed image as data URL  
+                const imageDataUrl = workingCanvas.toDataURL('image/png');
+                
+                // Run OCR
+                console.log('Starting OCR...');
+                testBtn.textContent = 'Processing...';
+                testBtn.disabled = true;
+                
+                try {
+                    const result = await binaryTraining.recognizeBinaryPattern(imageDataUrl);
+                    
+                    // Display results
+                    rawText.textContent = result.rawText || 'No raw text';
+                    extractedBinary.textContent = result.correctedText || 'No binary extracted';
+                    
+                    // Convert to ASCII
+                    if (result.correctedText) {
+                        const words = result.correctedText.split(' ').filter(w => /^[01]{8}$/.test(w));
+                        const ascii = words.map(bin => {
+                            const charCode = parseInt(bin, 2);
+                            const char = String.fromCharCode(charCode);
+                            return (charCode >= 32 && charCode <= 126) ? char : `[${charCode}]`;
+                        }).join('');
+                        finalAscii.textContent = ascii || 'No valid ASCII';
+                    } else {
+                        finalAscii.textContent = 'No binary data to convert';
+                    }
+                    
+                } catch (error) {
+                    console.error('OCR Error:', error);
+                    rawText.textContent = 'OCR Error: ' + error.message;
+                } finally {
+                    testBtn.textContent = 'Test OCR';
+                    testBtn.disabled = false;
+                }
+            };
+            
+            img.src = URL.createObjectURL(file);
+        });
+    </script>
+</body>
+</html>

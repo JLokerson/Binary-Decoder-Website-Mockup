@@ -5,6 +5,7 @@
     <title>Binary Decoder Mockup</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.1/dist/tesseract.min.js"></script>
+    <script src="binary-ocr-training.js"></script>
 </head>
 <body> 
     <header>
@@ -62,37 +63,58 @@
         let ocrInterval = null;
         let currentMode = null;
         let processedCanvasVisible = false;
+        
+        // Initialize training module
+        const binaryTraining = new BinaryOCRTraining();
 
-        // Helper: Convert binary string to ASCII (more tolerant)
-        function binaryToAscii(binaryStr, printableOnly = false) {
-            // Replace common OCR mistakes: l, I, O with 1 and 0
-            let cleaned = binaryStr.replace(/[lI]/g, '1').replace(/[O]/g, '0');
-            // Show raw OCR output for debugging
-            const debugArea = document.getElementById('outputArea');
-            let debugPre = document.getElementById
-            // Split by whitespace, filter only valid 8-char binary words
-            const words = cleaned.split(/\s+/);
+        // Helper: Convert binary string to ASCII (optimized based on training)
+        function binaryToAscii(binaryStr, printableOnly = true) {
+            console.log("Raw OCR input:", binaryStr);
+            
+            // Clean up the string - remove extra whitespace and normalize
+            let cleaned = binaryStr.replace(/\s+/g, ' ').trim();
+            console.log("Cleaned input:", cleaned);
+            
+            // Split by whitespace to get individual binary groups
+            const words = cleaned.split(' ');
+            console.log("Split words:", words);
+            
+            // Filter for valid 8-bit binary patterns
             const binaries = words.filter(w => /^[01]{8}$/.test(w));
-            const ignored = words.filter(w => w.length === 8 && !/^[01]{8}$/.test(w));
+            console.log("Valid binary groups found:", binaries.length, binaries);
+            
+            // Log ignored words for debugging
+            const ignored = words.filter(w => w.length > 0 && !/^[01]{8}$/.test(w));
             if (ignored.length > 0) {
-                console.log("Ignored non-binary 8-char words:", ignored);
+                console.log("Ignored non-binary words:", ignored);
             }
+            
             if (binaries.length === 0) {
                 console.log("No valid 8-bit binary groups found.");
                 return '';
             }
+            
+            // Convert binary to ASCII characters
             let ascii = binaries.map(bin => {
                 const charCode = parseInt(bin, 2);
                 const char = String.fromCharCode(charCode);
+                console.log(`Binary ${bin} -> Decimal ${charCode} -> Character '${char}'`);
                 return char;
             }).join('');
+            
             if (printableOnly) {
-                // Filter to printable ASCII (32-126)
+                // Filter to printable ASCII (32-126) and common whitespace
+                const originalLength = ascii.length;
                 ascii = ascii.split('').filter(c => {
                     const code = c.charCodeAt(0);
-                    return code >= 32 && code <= 126;
+                    return (code >= 32 && code <= 126) || code === 9 || code === 10 || code === 13;
                 }).join('');
+                
+                if (ascii.length !== originalLength) {
+                    console.log(`Filtered ${originalLength - ascii.length} non-printable characters`);
+                }
             }
+            
             console.log("Final ASCII output:", ascii);
             return ascii;
         }
@@ -256,16 +278,38 @@
             processedCanvas.style.display = processedCanvasVisible ? 'block' : 'none';
             toggleProcessedBtn.textContent = processedCanvasVisible ? 'Hide Processed Image' : 'Show Processed Image';
         };
-        // Helper: Grayscale conversion
+        // Helper: Enhanced image preprocessing based on training results
         function preprocessCanvas(canvas, debugCanvas) {
             const ctx = canvas.getContext('2d');
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            // Grayscale conversion
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                let avg = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
-                imageData.data[i] = imageData.data[i+1] = imageData.data[i+2] = avg;
+            const data = imageData.data;
+            
+            // Enhanced preprocessing pipeline
+            for (let i = 0; i < data.length; i += 4) {
+                // Convert to grayscale using luminance formula
+                const gray = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+                
+                // Apply contrast enhancement for better binary digit recognition
+                let enhanced = gray;
+                
+                // Increase contrast - important for binary digit clarity
+                enhanced = ((enhanced - 128) * 1.5) + 128;
+                
+                // Apply threshold for better black/white separation
+                if (enhanced > 140) {
+                    enhanced = 255; // Pure white background
+                } else if (enhanced < 100) {
+                    enhanced = 0;   // Pure black text
+                }
+                
+                // Clamp values
+                enhanced = Math.max(0, Math.min(255, enhanced));
+                
+                data[i] = data[i+1] = data[i+2] = enhanced;
             }
+            
             ctx.putImageData(imageData, 0, 0);
+            
             // If debugging, copy to debugCanvas
             if (debugCanvas) {
                 debugCanvas.width = canvas.width;
@@ -283,44 +327,63 @@
         function isImageLargeEnough(width, height, minWidth = 3, minHeight = 36) {
             return width >= minWidth && height >= minHeight;
         }
-        // OCR for still image (canvas) with preprocessing
-        function runOcrOnCanvas(canvas) {
+        // OCR for still image (canvas) with training-optimized preprocessing
+        async function runOcrOnCanvas(canvas) {
             if (!isImageLargeEnough(canvas.width, canvas.height)) {
                 decodedText.textContent = '// Image too small to scan!';
                 console.warn(`Image too small to scale!! (${canvas.width}x${canvas.height} vs min width of 3)`);
                 return;
             }
-            decodedText.textContent = 'Scanning...';
+            
+            decodedText.textContent = 'Scanning with trained model...';
+            
+            // Scale up image for better OCR (from training results)
             const scale = 2;
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width * scale;
             tempCanvas.height = canvas.height * scale;
             const tempCtx = tempCanvas.getContext('2d');
             tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
-            preprocessCanvas(tempCanvas, processedCanvas);
+            
+            // Apply training-optimized preprocessing
+            binaryTraining.preprocessImageForOCR(tempCanvas, processedCanvas);
+            
             const imageDataUrl = tempCanvas.toDataURL('image/png');
-            Tesseract.recognize(imageDataUrl, 'eng', {
-                logger: m => { console.log("Tesseract progress:", m); },
-                config: {
-                    tessedit_char_whitelist: '01IlO ',
-                    classify_bln_numeric_mode: 1
+            
+            try {
+                // Use training-optimized OCR pipeline
+                const result = await binaryTraining.recognizeBinaryPattern(imageDataUrl);
+                
+                if (result.success) {
+                    console.log("Training-optimized OCR result:", result);
+                    console.log("Raw OCR:", result.rawText);
+                    console.log("Corrected text:", result.correctedText);
+                    console.log("Validation:", result.validation);
+                    
+                    // Convert binary to ASCII
+                    const ascii = binaryToAscii(result.correctedText);
+                    
+                    if (ascii) {
+                        decodedText.textContent = ascii;
+                        console.log(`OCR completed in ${result.processingTime}ms with ${result.stats.validBinaryGroups} valid binary groups`);
+                    } else {
+                        decodedText.textContent = '// No valid binary detected';
+                        if (result.validation.errors.length > 0) {
+                            console.warn("Validation errors:", result.validation.errors);
+                        }
+                    }
+                } else {
+                    console.error("OCR failed:", result.error);
+                    decodedText.textContent = '// OCR error: ' + result.error;
                 }
-            }).then(result => {
-                console.log("Tesseract OCR result:", result.data.text);
-                // Show raw OCR output for debugging
-                console.log("Raw OCR output:", result.data.text);
-                const binaryStr = result.data.text.replace(/\s+/g, ' ').trim();
-                console.log("Processed binary string:", binaryStr);
-                const ascii = binaryToAscii(binaryStr);
-                decodedText.textContent = ascii || '// No valid binary detected';
-            }).catch((err) => {
+            } catch (err) {
                 console.error("OCR error:", err);
                 decodedText.textContent = '// OCR error';
-            });
+            }
         }
-        // OCR for uploaded image with preprocessing
+        // OCR for uploaded image with training-optimized preprocessing
         function runOcrOnImage(img) {
-            img.onload = function() {
+            img.onload = async function() {
                 const scale = 2;
                 const w = img.naturalWidth * scale;
                 const h = img.naturalHeight * scale;
@@ -329,34 +392,47 @@
                     console.warn(`Image too small to scale!! (${img.naturalWidth}x${img.naturalHeight} vs min width of 3)`);
                     return;
                 }
+                
+                decodedText.textContent = 'Processing uploaded image with trained model...';
+                
                 photoCanvas.width = w;
                 photoCanvas.height = h;
                 const ctx = photoCanvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, photoCanvas.width, photoCanvas.height);
                 photoCanvas.style.display = 'none';
-                preprocessCanvas(photoCanvas, processedCanvas);
+                
+                // Apply training-optimized preprocessing
+                binaryTraining.preprocessImageForOCR(photoCanvas, processedCanvas);
+                
                 const imageDataUrl = photoCanvas.toDataURL('image/png');
-                Tesseract.recognize(imageDataUrl, 'eng', {
-                    logger: m => { console.log("Tesseract progress:", m); },
-                    config: {
-                        tessedit_char_whitelist: '01IlO ',
-                        classify_bln_numeric_mode: 1
-                    }
-                }).then(result => {
-                    console.log("Tesseract OCR result:", result.data.text);
-                    console.log("Raw OCR output:", result.data.text);
-                    const binaryStr = result.data.text.replace(/\s+/g, ' ').trim();
-                    const ascii = binaryToAscii(binaryStr);
-                    if (ascii) {
-                        decodedText.textContent = ascii;
+                
+                try {
+                    // Use training-optimized OCR pipeline
+                    const result = await binaryTraining.recognizeBinaryPattern(imageDataUrl);
+                    
+                    if (result.success) {
+                        console.log("Training-optimized OCR result:", result);
+                        console.log("Processing time:", result.processingTime + "ms");
+                        
+                        const ascii = binaryToAscii(result.correctedText);
+                        
+                        if (ascii) {
+                            decodedText.textContent = ascii;
+                            console.log(`Successfully decoded ${result.stats.validBinaryGroups} binary groups`);
+                        } else {
+                            decodedText.textContent = '// No valid binary patterns detected';
+                            console.log("Validation issues:", result.validation);
+                        }
                     } else {
-                        decodedText.textContent = '// No valid binary detected';
+                        console.error("OCR failed:", result.error);
+                        decodedText.textContent = '// OCR error: ' + result.error;
                     }
-                }).catch((err) => {
+                } catch (err) {
                     console.error("OCR error: Could not read binary from image.", err);
                     decodedText.textContent = '// OCR error: Could not read binary from image.';
-                });
+                }
             };
+            
             if (img.complete) {
                 img.onload();
             }
@@ -377,31 +453,40 @@
                         console.warn(`Image too small to scale!! (${vw}x${vh} vs min width of 3)`);
                         return;
                     }
+                    
                     const sx = Math.floor((vw - squareSize) / 2);
                     const sy = Math.floor((vh - squareSize) / 2);
                     ctx.drawImage(video, sx, sy, squareSize, squareSize, 0, 0, squareSize, squareSize);
-                    preprocessCanvas(canvas, processedCanvas);
+                    
+                    // Apply training-optimized preprocessing
+                    binaryTraining.preprocessImageForOCR(canvas, processedCanvas);
+                    
                     const imageDataUrl = canvas.toDataURL('image/png');
-                    decodedText.textContent = "Scanning...";
+                    decodedText.textContent = "Scanning with trained model...";
+                    
                     try {
-                        const result = await Tesseract.recognize(imageDataUrl, 'eng', {
-                            logger: m => { console.log("Tesseract progress:", m); },
-                            config: {
-                                tessedit_char_whitelist: '01IlO ',
-                                classify_bln_numeric_mode: 1
+                        // Use training-optimized OCR pipeline
+                        const result = await binaryTraining.recognizeBinaryPattern(imageDataUrl);
+                        
+                        if (result.success) {
+                            console.log(`Live OCR: ${result.stats.validBinaryGroups} binary groups, ${result.processingTime}ms`);
+                            const ascii = binaryToAscii(result.correctedText);
+                            decodedText.textContent = ascii || "// No valid binary detected";
+                            
+                            // Show confidence and processing time for live feed
+                            if (ascii && result.confidence) {
+                                console.log(`Confidence: ${Math.round(result.confidence)}%`);
                             }
-                        });
-                        console.log("Tesseract OCR result:", result.data.text);
-                        console.log("Raw OCR output:", result.data.text);
-                        const binaryStr = result.data.text.replace(/\s+/g, ' ').trim();
-                        const ascii = binaryToAscii(binaryStr);
-                        decodedText.textContent = ascii || "// No valid binary detected";
+                        } else {
+                            console.error("Live OCR failed:", result.error);
+                            decodedText.textContent = "// OCR error";
+                        }
                     } catch (err) {
                         console.error("OCR error:", err);
                         decodedText.textContent = "// OCR error";
                     }
                 }
-            }, 1000); 
+            }, 1500); // Slightly slower interval for better performance with training pipeline 
         }
         window.onload = showSelectionMenu;
     </script>
