@@ -300,11 +300,7 @@
             preprocessCanvas(tempCanvas, processedCanvas);
             const imageDataUrl = tempCanvas.toDataURL('image/png');
             Tesseract.recognize(imageDataUrl, 'eng', {
-                logger: m => { console.log("Tesseract progress:", m); },
-                config: {
-                    tessedit_char_whitelist: '01IlO ',
-                    classify_bln_numeric_mode: 1
-                }
+                logger: m => { console.log("Tesseract progress:", m); }
             }).then(result => {
                 console.log("Tesseract OCR result:", result.data.text);
                 // Show raw OCR output for debugging
@@ -337,11 +333,7 @@
                 preprocessCanvas(photoCanvas, processedCanvas);
                 const imageDataUrl = photoCanvas.toDataURL('image/png');
                 Tesseract.recognize(imageDataUrl, 'eng', {
-                    logger: m => { console.log("Tesseract progress:", m); },
-                    config: {
-                        tessedit_char_whitelist: '01IlO ',
-                        classify_bln_numeric_mode: 1
-                    }
+                    logger: m => { console.log("Tesseract progress:", m); }
                 }).then(result => {
                     console.log("Tesseract OCR result:", result.data.text);
                     console.log("Raw OCR output:", result.data.text);
@@ -385,11 +377,7 @@
                     decodedText.textContent = "Scanning...";
                     try {
                         const result = await Tesseract.recognize(imageDataUrl, 'eng', {
-                            logger: m => { console.log("Tesseract progress:", m); },
-                            config: {
-                                tessedit_char_whitelist: '01IlO ',
-                                classify_bln_numeric_mode: 1
-                            }
+                            logger: m => { console.log("Tesseract progress:", m); }
                         });
                         console.log("Tesseract OCR result:", result.data.text);
                         console.log("Raw OCR output:", result.data.text);
