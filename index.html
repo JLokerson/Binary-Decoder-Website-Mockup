@@ -25,6 +25,7 @@
         <button class="option-btn" id="takePhotoBtn">Take a Photo</button>
         <button class="option-btn" id="insertPhotoBtn">Insert a Photo</button>
         <button class="option-btn" id="scanCameraBtn">Scan from Camera Feed</button>
+        <button class="option-btn" id="textInputBtn">Text Input</button>
     </div>
     <!-- Main Area (hidden until option selected) -->
     <div class="main-area" id="mainArea" style="display:none;">
@@ -36,13 +37,19 @@
                 <img id="uploadedImg" style="display:none; max-width:100%;" />
                 <canvas id="processedCanvas" style="display:none; max-width:100%; border:1px solid #aaa;"></canvas>
                 <button id="toggleProcessedBtn" class="option-btn" style="display:none; margin-top:8px;">Show Processed Image</button>
+                <!-- Text Input Area -->
+                <div id="textInputArea" style="display:none;">
+                    <label for="binaryTextInput" style="font-size:1.2em; font-weight:bold; display:block; margin-bottom:8px;">Enter Binary Code:</label>
+                    <textarea id="binaryTextInput" placeholder="Enter binary code here (e.g., 01001000 01100101 01101100 01101100 01101111)" 
+                              style="width:100%; height:200px; font-family:monospace; font-size:14px; padding:8px; border:1px solid #ccc; border-radius:4px; resize:vertical;"></textarea>
+                    <div style="margin-top:8px; font-size:0.9em; color:#666;">
+                        <strong>Tips:</strong> Enter binary in 8-bit groups separated by spaces. Invalid characters will be highlighted.
+                    </div>
+                </div>
             </div>
             <div class="output-area" id="outputArea">
                 <strong style="font-size:1.3em;">Decoded Text:</strong>
                 <pre id="decodedText" style="font-size:1.2em;">// ...binary will appear here...</pre>
-                <div id="modelStatus" style="margin-top:10px; font-size:0.9em; color:#666;">
-                    Model Status: Loading...
-                </div>
             </div>
         </div>
     </div>
@@ -53,13 +60,10 @@
         // Custom Gill Sans model configuration
         let customModelLoaded = false;
         let tesseractWorker = null;
-        const modelStatus = document.getElementById('modelStatus');
         
         // Load custom Gill Sans model
         async function loadCustomModel() {
             try {
-                modelStatus.textContent = 'Model Status: Loading custom Gill Sans model...';
-                
                 // Create worker without logger to avoid cloning issues
                 const worker = await Tesseract.createWorker();
                 
@@ -68,14 +72,10 @@
                 await worker.initialize('gillsans');
                 
                 customModelLoaded = true;
-                modelStatus.textContent = 'Model Status: ✓ Custom Gill Sans model loaded';
-                modelStatus.style.color = '#4CAF50';
                 
                 return worker;
             } catch (error) {
                 console.warn('Custom model not found, falling back to English:', error);
-                modelStatus.textContent = 'Model Status: Using default English model (custom model not available)';
-                modelStatus.style.color = '#FF9800';
                 
                 // Fallback to default English model
                 const worker = await Tesseract.createWorker();
@@ -113,6 +113,7 @@
         const takePhotoBtn = document.getElementById('takePhotoBtn');
         const insertPhotoBtn = document.getElementById('insertPhotoBtn');
         const scanCameraBtn = document.getElementById('scanCameraBtn');
+        const textInputBtn = document.getElementById('textInputBtn');
         const backBtn = document.getElementById('backBtn');
         const photoCanvas = document.getElementById('photoCanvas');
         const uploadedImg = document.getElementById('uploadedImg');
@@ -121,6 +122,8 @@
         const decodedText = document.getElementById('decodedText');
         const processedCanvas = document.getElementById('processedCanvas');
         const toggleProcessedBtn = document.getElementById('toggleProcessedBtn');
+        const textInputArea = document.getElementById('textInputArea');
+        const binaryTextInput = document.getElementById('binaryTextInput');
         let ocrInterval = null;
         let currentMode = null;
         let processedCanvasVisible = false;
@@ -199,6 +202,7 @@
             video.style.display = 'none';
             photoCanvas.style.display = 'none';
             uploadedImg.style.display = 'none';
+            textInputArea.style.display = 'none';
             decodedText.textContent = '// ...binary will appear here...';
             if (ocrInterval) clearInterval(ocrInterval);
             if (video.srcObject) {
@@ -467,6 +471,36 @@
             showSelectionMenu();
             // Pre-load the custom model
             tesseractWorker = await loadCustomModel();
+        };
+        
+        // Text Input Mode
+        textInputBtn.onclick = () => {
+            showMainArea('text');
+            video.style.display = 'none';
+            photoCanvas.style.display = 'none';
+            uploadedImg.style.display = 'none';
+            processedCanvas.style.display = 'none';
+            toggleProcessedBtn.style.display = 'none';
+            textInputArea.style.display = 'block';
+            decodedText.textContent = '// Enter binary code in the text area...';
+            binaryTextInput.focus();
+        };
+
+        // Real-time binary text conversion
+        binaryTextInput.oninput = () => {
+            const inputText = binaryTextInput.value;
+            if (!inputText.trim()) {
+                decodedText.textContent = '// Enter binary code in the text area...';
+                return;
+            }
+            
+            // Convert text input using existing binaryToAscii function
+            const result = binaryToAscii(inputText);
+            if (result) {
+                decodedText.textContent = result;
+            } else {
+                decodedText.textContent = '// No valid 8-bit binary groups found. Make sure to use spaces between 8-bit groups.';
+            }
         };
     </script>
 </body>
