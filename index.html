@@ -8,7 +8,7 @@
 </head>
 <body> 
     <header>
-        <h1>Binary Decoder Mockup - Gill Sans Optimized</h1>
+        <h1>Binary Decoder Mockup</h1>
     </header>
     <div class="description">
         <p>
@@ -21,11 +21,11 @@
         </ul>
     </div>
     <!-- Selection Menu -->
-    <div class="selection-menu" id="selectionMenu">
-        <button class="option-btn" id="takePhotoBtn">Take a Photo</button>
-        <button class="option-btn" id="insertPhotoBtn">Insert a Photo</button>
-        <button class="option-btn" id="scanCameraBtn">Scan from Camera Feed</button>
-        <button class="option-btn" id="textInputBtn">Text Input</button>
+    <div class="selection-menu" id="selectionMenu" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <button class="option-btn" id="takePhotoBtn" style="aspect-ratio: 1; min-height: 180px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 30px; border-radius: 8px; font-size: 28px;">Take a Photo</button>
+        <button class="option-btn" id="insertPhotoBtn" style="aspect-ratio: 1; min-height: 180px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 30px; border-radius: 8px; font-size: 28px;">Insert a Photo</button>
+        <button class="option-btn" id="scanCameraBtn" style="aspect-ratio: 1; min-height: 180px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 30px; border-radius: 8px; font-size: 28px;">Scan from Camera Feed</button>
+        <button class="option-btn" id="textInputBtn" style="aspect-ratio: 1; min-height: 180px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 30px; border-radius: 8px; font-size: 28px;">Text Input</button>
     </div>
     <!-- Main Area (hidden until option selected) -->
     <div class="main-area" id="mainArea" style="display:none;">
@@ -198,7 +198,7 @@
         // Hide main area, show selection menu
         function showSelectionMenu() {
             mainArea.style.display = 'none';
-            selectionMenu.style.display = 'flex';
+            selectionMenu.style.display = 'grid';
             video.style.display = 'none';
             photoCanvas.style.display = 'none';
             uploadedImg.style.display = 'none';
