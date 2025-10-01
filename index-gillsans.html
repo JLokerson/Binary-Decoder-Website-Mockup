@@ -60,9 +60,8 @@
             try {
                 modelStatus.textContent = 'Model Status: Loading custom Gill Sans model...';
                 
-                const worker = await Tesseract.createWorker({
-                    logger: m => console.log('Model loading:', m)
-                });
+                // Create worker without logger to avoid cloning issues
+                const worker = await Tesseract.createWorker();
                 
                 // Try to load custom model
                 await worker.loadLanguage('./tessdata/gillsans.traineddata');
@@ -130,36 +129,51 @@
         function binaryToAscii(binaryStr, printableOnly = false) {
             console.log("Input binary string:", binaryStr);
             
-            // Replace common OCR mistakes: l, I, O with 1 and 0
-            let cleaned = binaryStr.replace(/[lI]/g, '1').replace(/[O]/g, '0');
-            console.log("After OCR corrections (l,I→1, O→0):", cleaned);
+            // More aggressive OCR error correction
+            let cleaned = binaryStr
+                // Common OCR mistakes for 1: l, I, |, !, 1
+                .replace(/[lI|!]/g, '1')
+                // Common OCR mistakes for 0: O, o, Q, D, []
+                .replace(/[OoQD\[\]]/g, '0')
+                // Handle mixed character sequences like "OI" -> "01", "IO" -> "10"
+                .replace(/OI/g, '01')
+                .replace(/IO/g, '10')
+                .replace(/Ol/g, '01')
+                .replace(/lO/g, '10')
+                // Remove any remaining non-binary characters and whitespace inconsistencies
+                .replace(/[^01\s]/g, '')
+                // Normalize whitespace
+                .replace(/\s+/g, ' ')
+                .trim();
             
-            // Split by whitespace, filter only valid 8-char binary words
-            const words = cleaned.split(/\s+/);
+            console.log("After OCR corrections:", cleaned);
+            
+            // Split by whitespace and filter to only valid 8-character binary strings
+            const words = cleaned.split(/\s+/).filter(word => word.length > 0);
             console.log("Split into words:", words);
             
-            const binaries = words.filter(w => /^[01]{8}$/.test(w));
-            const ignored = words.filter(w => w.length === 8 && !/^[01]{8}$/.test(w));
-            const otherIgnored = words.filter(w => w.length !== 8);
+            // Only keep exactly 8-character strings that are pure binary
+            const validBinaries = words.filter(w => w.length === 8 && /^[01]{8}$/.test(w));
             
-            console.log("Valid 8-bit binary groups:", binaries);
+            // Log what we're keeping vs discarding
+            const discarded = words.filter(w => w.length !== 8 || !/^[01]{8}$/.test(w));
             
-            if (ignored.length > 0) {
-                console.log("Ignored 8-char non-binary words:", ignored);
+            console.log("Valid 8-bit binary groups:", validBinaries);
+            
+            if (discarded.length > 0) {
+                console.log("Discarded invalid sequences:", discarded);
             }
             
-            if (otherIgnored.length > 0) {
-                console.log("Ignored non-8-char words:", otherIgnored);
-            }
-            
-            if (binaries.length === 0) {
-                console.log("No valid 8-bit binary groups found.");
+            if (validBinaries.length === 0) {
+                console.log("No valid 8-bit binary groups found after cleaning.");
                 return '';
             }
             
-            let ascii = binaries.map(bin => {
+            // Convert binary to ASCII
+            let ascii = validBinaries.map(bin => {
                 const charCode = parseInt(bin, 2);
                 const char = String.fromCharCode(charCode);
+                console.log(`${bin} -> ${charCode} -> "${char}"`);
                 return char;
             }).join('');
             
