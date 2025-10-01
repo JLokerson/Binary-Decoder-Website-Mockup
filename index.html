@@ -5,8 +5,18 @@
     <title>Binary Decoder Mockup - Gill Sans Optimized</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.1/dist/tesseract.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(to bottom, #A8A8A8 0%, #4e4e4e 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+    </style>
 </head>
 <body> 
+    <!-- Binary Background Pattern -->
+    <div id="binaryBackground" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; font-family: monospace; font-size: 14px; color: rgba(255, 255, 255, 0.15); line-height: 1.2; padding: 20px; overflow: hidden; white-space: pre-wrap; word-wrap: break-word;"></div>
+
     <header>
         <h1>Binary Decoder Mockup</h1>
     </header>
@@ -57,6 +67,57 @@
     <input type="file" id="fileInput" accept="image/*" style="display:none;" />
     
     <script>
+        // Generate binary pattern background
+        function generateBinaryBackground() {
+            const fullBinaryString = "01010100 01101000 01101001 01110011 00100000 01110111 01100101 01100010 01110011 01101001 01110100 01100101 00100000 01110111 01100001 01110011 00100000 01101101 01100001 01100100 01100101 00100000 01100010 01111001 00100000 01001010 01110101 01101100 01101001 01100001 00100000 01001100 01101111 01101011 01100101 01110010 01110011 01101111 01101110 ";
+            const backgroundDiv = document.getElementById('binaryBackground');
+            
+            // Calculate dimensions more accurately
+            const fontSize = 14;
+            const lineHeight = fontSize * 1.2; // 16.8px actual line height
+            const charWidth = fontSize * 0.6; // Approximate monospace character width
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Calculate how many characters fit per line and how many lines we need
+            const charsPerLine = Math.floor(viewportWidth / charWidth) + 10; // Extra chars for safety
+            const numLines = Math.floor(viewportHeight / lineHeight) + 5; // Extra lines for safety
+            
+            // Create a continuous pattern that wraps seamlessly
+            let fullPattern = '';
+            let currentPos = 0;
+            
+            for (let line = 0; line < numLines; line++) {
+                let lineText = '';
+                let lineLength = 0;
+                
+                while (lineLength < charsPerLine) {
+                    const remainingSpace = charsPerLine - lineLength;
+                    const availableText = fullBinaryString.slice(currentPos);
+                    
+                    if (availableText.length === 0 || currentPos >= fullBinaryString.length) {
+                        currentPos = 0; // Reset to beginning of pattern
+                        continue;
+                    }
+                    
+                    if (availableText.length >= remainingSpace) {
+                        lineText += availableText.slice(0, remainingSpace);
+                        currentPos += remainingSpace;
+                        lineLength = charsPerLine;
+                    } else {
+                        lineText += availableText;
+                        lineLength += availableText.length;
+                        currentPos = 0; // Reset to beginning for next iteration
+                    }
+                }
+                
+                fullPattern += lineText + '\n';
+            }
+            
+            backgroundDiv.textContent = fullPattern;
+        }
+
         // Custom Gill Sans model configuration
         let customModelLoaded = false;
         let tesseractWorker = null;
@@ -468,9 +529,13 @@
         }
 
         window.onload = async () => {
+            generateBinaryBackground();
             showSelectionMenu();
             // Pre-load the custom model
             tesseractWorker = await loadCustomModel();
+            
+            // Regenerate background on window resize
+            window.addEventListener('resize', generateBinaryBackground);
         };
         
         // Text Input Mode
