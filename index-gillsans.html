@@ -95,9 +95,11 @@
             
             try {
                 const result = await tesseractWorker.recognize(imageDataUrl);
-                console.log("Tesseract OCR result:", result.data.text);
+                console.log("Raw Tesseract OCR result:", result.data.text);
                 
                 const binaryStr = result.data.text.replace(/\s+/g, ' ').trim();
+                console.log("Normalized OCR text:", binaryStr);
+                
                 const ascii = binaryToAscii(binaryStr);
                 return ascii || '// No valid binary detected';
             } catch (error) {
@@ -106,9 +108,6 @@
             }
         }
 
-        // Initialize worker on page load
-        let tesseractWorker = null;
-        
         // New UI elements
         const selectionMenu = document.getElementById('selectionMenu');
         const mainArea = document.getElementById('mainArea');
@@ -129,16 +128,28 @@
 
         // Helper: Convert binary string to ASCII (more tolerant)
         function binaryToAscii(binaryStr, printableOnly = false) {
+            console.log("Input binary string:", binaryStr);
+            
             // Replace common OCR mistakes: l, I, O with 1 and 0
             let cleaned = binaryStr.replace(/[lI]/g, '1').replace(/[O]/g, '0');
+            console.log("After OCR corrections (l,I→1, O→0):", cleaned);
             
             // Split by whitespace, filter only valid 8-char binary words
             const words = cleaned.split(/\s+/);
+            console.log("Split into words:", words);
+            
             const binaries = words.filter(w => /^[01]{8}$/.test(w));
             const ignored = words.filter(w => w.length === 8 && !/^[01]{8}$/.test(w));
+            const otherIgnored = words.filter(w => w.length !== 8);
+            
+            console.log("Valid 8-bit binary groups:", binaries);
             
             if (ignored.length > 0) {
-                console.log("Ignored non-binary 8-char words:", ignored);
+                console.log("Ignored 8-char non-binary words:", ignored);
+            }
+            
+            if (otherIgnored.length > 0) {
+                console.log("Ignored non-8-char words:", otherIgnored);
             }
             
             if (binaries.length === 0) {
@@ -152,11 +163,15 @@
                 return char;
             }).join('');
             
+            console.log("Raw ASCII conversion:", ascii);
+            
             if (printableOnly) {
+                const originalLength = ascii.length;
                 ascii = ascii.split('').filter(c => {
                     const code = c.charCodeAt(0);
                     return code >= 32 && code <= 126;
                 }).join('');
+                console.log(`Filtered to printable only: ${originalLength} → ${ascii.length} chars`);
             }
             
             console.log("Final ASCII output:", ascii);
