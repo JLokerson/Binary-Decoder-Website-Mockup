@@ -30,58 +30,28 @@ def check_python_packages():
 
 def check_font_files():
     """Check for OTF font files in training folder"""
-    print("\nDebugging font file detection:")
+    # Look in the training folder one level up
+    training_paths = ["training", "../training"]
     
-    # Check if training folder exists
-    if not os.path.exists("training"):
-        print("✗ Training folder does not exist")
-        return False
+    for training_path in training_paths:
+        if os.path.exists(training_path):
+            try:
+                all_files = os.listdir(training_path)
+                otf_files = [f for f in all_files if f.lower().endswith('.otf')]
+                
+                if otf_files:
+                    print(f"✓ Font files found: {len(otf_files)} OTF files in {os.path.abspath(training_path)}")
+                    for font in otf_files[:5]:  # Show first 5 to avoid spam
+                        print(f"  - {font}")
+                    if len(otf_files) > 5:
+                        print(f"  ... and {len(otf_files) - 5} more files")
+                    return True
+            except Exception as e:
+                print(f"Error reading {training_path}: {e}")
     
-    # List all files in training folder
-    try:
-        all_files = os.listdir("training")
-        print(f"All files in training folder: {all_files}")
-    except Exception as e:
-        print(f"Error reading training folder: {e}")
-        return False
-    
-    # Try multiple patterns to find OTF files
-    otf_patterns = [
-        "training/*.otf",
-        "training/*.OTF",
-        "training/*.[oO][tT][fF]"
-    ]
-    
-    otf_files = []
-    for pattern in otf_patterns:
-        files = glob.glob(pattern)
-        print(f"Pattern '{pattern}' found: {files}")
-        otf_files.extend(files)
-    
-    # Remove duplicates
-    otf_files = list(set(otf_files))
-    
-    # Also try manual detection
-    manual_files = []
-    try:
-        for file in os.listdir("training"):
-            if file.lower().endswith('.otf'):
-                manual_files.append(os.path.join("training", file))
-        print(f"Manual detection found: {manual_files}")
-    except Exception as e:
-        print(f"Manual detection error: {e}")
-    
-    # Combine results
-    all_found = list(set(otf_files + manual_files))
-    
-    if all_found:
-        print(f"✓ Font files found: {len(all_found)} OTF files in training folder")
-        for font in all_found:
-            print(f"  - {font}")
-        return True
-    else:
-        print("✗ No OTF font files found in training folder")
-        return False
+    print("✗ No OTF font files found in training folder")
+    print("  Checked paths: training, ../training")
+    return False
 
 def main():
     """Check all prerequisites for Tesseract training"""
