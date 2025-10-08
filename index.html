@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Binary Decoder Mockup - Gill Sans Optimized</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.1/dist/tesseract.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@v5.0.1/dist/tesseract.min.js"></script>
     <style>
         body {
             background: linear-gradient(to bottom, #A8A8A8 0%, #4e4e4e 100%);
@@ -308,6 +308,13 @@
             showMainArea('photo');
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 try {
+                    // Check if we're on HTTPS or localhost
+                    const isSecureContext = window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+                    
+                    if (!isSecureContext) {
+                        throw new Error('Camera access requires HTTPS or localhost');
+                    }
+                    
                     // Try recommended facingMode first
                     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                     video.srcObject = stream;
@@ -372,7 +379,8 @@
                             btn.style.display = 'block';
                         }
                     } catch (err2) {
-                        alert('Camera access denied or not available.');
+                        console.error('Camera access error:', err2);
+                        alert('Camera access denied or not available. For local development, make sure you are using http://localhost:8000 (not https).');
                         showSelectionMenu();
                     }
                 }
@@ -411,6 +419,13 @@
             decodedText.textContent = '// ...binary will appear here...';
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 try {
+                    // Check if we're on HTTPS or localhost
+                    const isSecureContext = window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+                    
+                    if (!isSecureContext) {
+                        throw new Error('Camera access requires HTTPS or localhost');
+                    }
+                    
                     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                     video.srcObject = stream;
                     startOcr();
@@ -420,12 +435,13 @@
                         video.srcObject = stream;
                         startOcr();
                     } catch (err2) {
-                        alert('Camera access denied or not available.');
+                        console.error('Camera access error:', err2);
+                        alert('Camera access denied or not available. For local development, make sure you are using http://localhost:8000 (not https) and allow camera permissions.');
                         showSelectionMenu();
                     }
                 }
             } else {
-                alert('Camera not supported in this browser. Make sure you are using HTTPS and a modern browser.');
+                alert('Camera not supported in this browser. Make sure you are using a modern browser and http://localhost:8000 for local development.');
                 showSelectionMenu();
             }
         };
