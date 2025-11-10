@@ -34,7 +34,7 @@ header {
     justify-content: center;
     gap: 2em;
     margin: 2em auto;
-    max-width: 900px;
+    max-width: 1200px;
     width: 100%;
 }
 .side-by-side {
@@ -94,11 +94,12 @@ header {
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     font-size: 1.3em;
     overflow: hidden;
+    flex-shrink: 0;
 }
 #decodedText {
     width: 100%;
     max-width: 100%;
-    min-height: 120px;
+    min-height: 300px;
     max-height: 300px;
     overflow: auto;
     white-space: pre-wrap;
@@ -142,6 +143,7 @@ header {
     align-items: center;
     justify-content: center;
     margin: 2em auto;
+    width: 100%;
 }
 .option-btn {
     font-size: 1.5em;
@@ -154,8 +156,13 @@ header {
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     transition: background 0.2s, color 0.2s;
-    width: 80%;
-    max-width: 400px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    word-wrap: break-word;
+    white-space: normal;
 }
 .option-btn:hover {
     background: #e6f0fa;
@@ -173,6 +180,7 @@ header {
     cursor: pointer;
     width: 60%;
     max-width: 300px;
+    text-align: center;
 }
 .back-btn:hover {
     background: #f0f0f0;

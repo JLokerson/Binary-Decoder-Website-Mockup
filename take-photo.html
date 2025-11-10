@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Take Photo - Binary Decoder</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(to bottom, #A8A8A8 0%, #4e4e4e 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .option-btn, .back-btn, #captureBtn {
+            color: #F56600 !important;
+            border: 2px solid #F56600 !important;
+            background-color: white !important;
+        }
+        
+        .option-btn:hover, .back-btn:hover, #captureBtn:hover {
+            background-color: #F56600 !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Binary Background Pattern -->
+    <div id="binaryBackground" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; font-family: monospace; font-size: 14px; color: rgba(255, 255, 255, 0.15); line-height: 1.2; padding: 20px; overflow: hidden; white-space: pre-wrap; word-wrap: break-word;"></div>
+
+    <header>
+        <h1>Take Photo - Binary Decoder</h1>
+    </header>
+
+    <div class="main-area">
+        <button class="back-btn" onclick="window.location.href='index.html'">Back to Menu</button>
+        <div class="side-by-side">
+            <div class="image-area">
+                <video id="video" autoplay playsinline muted style="display:none;"></video>
+                <canvas id="photoCanvas" style="display:none;"></canvas>
+                <canvas id="processedCanvas" style="display:none; max-width:100%; border:1px solid #aaa;"></canvas>
+                <button id="captureBtn" style="display:none; margin-top:8px;">Capture Photo</button>
+                <button id="toggleProcessedBtn" class="option-btn" style="display:none; margin-top:8px;">Show Processed Image</button>
+            </div>
+            <div class="output-area">
+                <strong style="font-size:1.3em;">Decoded Text:</strong>
+                <pre id="decodedText" style="font-size:1.2em;">// Click start to begin camera...</pre>
+                <button id="startBtn" class="option-btn" style="margin-top:10px;">Start Camera</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="binary-decoder.js"></script>
+    <script>
+        let processedCanvasVisible = false;
+        
+        document.getElementById('startBtn').onclick = async () => {
+            const startBtn = document.getElementById('startBtn');
+            startBtn.style.display = 'none';
+            
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const isSecureContext = window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+                    
+                    if (!isSecureContext) {
+                        throw new Error('Camera access requires HTTPS or localhost');
+                    }
+                    
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                    video.srcObject = stream;
+                    video.style.display = 'block';
+                    decodedText.textContent = '// Camera ready - click capture to scan...';
+                    document.getElementById('captureBtn').style.display = 'block';
+                } catch (err) {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        video.srcObject = stream;
+                        video.style.display = 'block';
+                        decodedText.textContent = '// Camera ready - click capture to scan...';
+                        document.getElementById('captureBtn').style.display = 'block';
+                    } catch (err2) {
+                        console.error('Camera access error:', err2);
+                        alert('Camera access denied or not available.');
+                        decodedText.textContent = '// Camera access failed';
+                        startBtn.style.display = 'block';
+                    }
+                }
+            }
+        };
+
+        document.getElementById('captureBtn').onclick = () => {
+            const canvas = document.getElementById('photoCanvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.style.display = 'block';
+            video.style.display = 'none';
+            document.getElementById('captureBtn').style.display = 'none';
+            
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            
+            runOcrOnCanvas(canvas);
+        };
+
+        document.getElementById('toggleProcessedBtn').onclick = () => {
+            processedCanvasVisible = !processedCanvasVisible;
+            document.getElementById('processedCanvas').style.display = processedCanvasVisible ? 'block' : 'none';
+            document.getElementById('toggleProcessedBtn').textContent = processedCanvasVisible ? 'Hide Processed Image' : 'Show Processed Image';
+        };
+    </script>
+</body>
+</html>
