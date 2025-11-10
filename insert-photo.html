@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Insert Photo - Binary Decoder</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(to bottom, #A8A8A8 0%, #4e4e4e 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .option-btn, .back-btn {
+            color: #F56600 !important;
+            border: 2px solid #F56600 !important;
+            background-color: white !important;
+        }
+        
+        .option-btn:hover, .back-btn:hover {
+            background-color: #F56600 !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Binary Background Pattern -->
+    <div id="binaryBackground" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; font-family: monospace; font-size: 14px; color: rgba(255, 255, 255, 0.15); line-height: 1.2; padding: 20px; overflow: hidden; white-space: pre-wrap; word-wrap: break-word;"></div>
+
+    <header>
+        <h1>Insert Photo - Binary Decoder</h1>
+    </header>
+
+    <div class="main-area">
+        <button class="back-btn" onclick="window.location.href='index.html'">Back to Menu</button>
+        <div class="side-by-side">
+            <div class="image-area">
+                <img id="uploadedImg" style="display:none; max-width:100%;" />
+                <canvas id="photoCanvas" style="display:none;"></canvas>
+                <canvas id="processedCanvas" style="display:none; max-width:100%; border:1px solid #aaa;"></canvas>
+                <button id="toggleProcessedBtn" class="option-btn" style="display:none; margin-top:8px; padding: 12px 25px; font-size: 18px; min-width: 180px; width: 180px;">Show Processed Image</button>
+                <button id="selectBtn" class="option-btn" style="margin-top:10px; padding: 20px 40px; font-size: 22px; min-width: 220px; width: 220px;">Select Image File</button>
+            </div>
+            <div class="output-area" style="align-items: flex-start; justify-content: flex-start; padding-top: 1em;">
+                <strong style="font-size:0.9em; margin-bottom: 2px;">Decoded Text:</strong>
+                <pre id="decodedText" style="font-size:0.9em; margin-top: -10px;">// Select an image to scan binary...</pre>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept="image/*" style="display:none;" />
+
+    <script src="binary-decoder.js"></script>
+    <script>
+        let processedCanvasVisible = false;
+        
+        document.getElementById('selectBtn').onclick = () => {
+            document.getElementById('fileInput').click();
+        };
+
+        document.getElementById('fileInput').onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const img = document.getElementById('uploadedImg');
+                    img.onload = function() {
+                        img.style.display = 'block';
+                        document.getElementById('selectBtn').textContent = 'Select Different Image';
+                        runOcrOnImage(img);
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        document.getElementById('toggleProcessedBtn').onclick = () => {
+            processedCanvasVisible = !processedCanvasVisible;
+            document.getElementById('processedCanvas').style.display = processedCanvasVisible ? 'block' : 'none';
+            document.getElementById('toggleProcessedBtn').textContent = processedCanvasVisible ? 'Hide Processed Image' : 'Show Processed Image';
+        };
+    </script>
+</body>
+</html>

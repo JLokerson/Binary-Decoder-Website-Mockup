@@ -2,472 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Binary Decoder Mockup - Gill Sans Optimized</title>
+    <title>Binary Decoder</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.1/dist/tesseract.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(to bottom, #A8A8A8 0%, #4e4e4e 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        /* Orange button styling */
+        .option-btn, .back-btn, #captureBtn {
+            color: #F56600 !important;
+            border: 2px solid #F56600 !important;
+            background-color: white
+        }
+        
+        .option-btn:hover, .back-btn:hover, #captureBtn:hover {
+            background-color: #F56600 !important;
+            color: white !important;
+        }
+        
+        button {
+            color: #F56600;
+            border: 2px solid #F56600;
+            background-color: transparent;
+        }
+        
+        button:hover {
+            background-color: #F56600;
+            color: white;
+        }
+    </style>
 </head>
 <body> 
+    <!-- Binary Background Pattern -->
+    <div id="binaryBackground" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; font-family: monospace; font-size: 14px; line-height: 16.8px; color: rgba(255, 255, 255, 0.15); padding: 20px; overflow: hidden; white-space: pre-wrap; word-wrap: break-word;"></div>
+
     <header>
-        <h1>Binary Decoder Mockup - Gill Sans Optimized</h1>
+        <h1>Binary Decoder Mockup</h1>
     </header>
     <div class="description">
         <p>
-            This webpage uses your phone's camera or images to scan binary and converts it to ASCII text in real time. 
-            <strong>Optimized for Gill Sans font recognition.</strong>
-        <ul>
-            <li>Camera access via WebRTC (getUserMedia)</li>
-            <li>OCR powered by custom Gill Sans trained Tesseract model</li>
-            <li>Real-time binary to ASCII conversion</li>
-        </ul>
+            A versatile binary decoder that converts binary code to ASCII text using multiple input methods.
+            <strong>Choose from camera scanning, image upload, or direct text input.</strong>
     </div>
     <!-- Selection Menu -->
-    <div class="selection-menu" id="selectionMenu">
-        <button class="option-btn" id="takePhotoBtn">Take a Photo</button>
-        <button class="option-btn" id="insertPhotoBtn">Insert a Photo</button>
-        <button class="option-btn" id="scanCameraBtn">Scan from Camera Feed</button>
+    <div class="selection-menu" id="selectionMenu" style="display: flex; flex-direction: column; gap: 25px; max-width: 800px; margin: 0 auto; padding: 40px; align-items: center;">
+        <button class="option-btn" onclick="window.location.href='take-photo.html'" style="min-height: 100px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 25px 50px; border-radius: 12px; font-size: 28px; white-space: normal; word-wrap: break-word; flex-wrap: wrap; width: 100%; max-width: 700px;">Take a Photo</button>
+        <button class="option-btn" onclick="window.location.href='insert-photo.html'" style="min-height: 100px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 25px 50px; border-radius: 12px; font-size: 28px; white-space: normal; word-wrap: break-word; flex-wrap: wrap; width: 100%; max-width: 700px;">Insert a Photo</button>
+        <button class="option-btn" onclick="window.location.href='scan-camera.html'" style="min-height: 100px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 25px 50px; border-radius: 12px; font-size: 28px; white-space: normal; word-wrap: break-word; flex-wrap: wrap; width: 100%; max-width: 700px;">Scan from Camera Feed</button>
+        <button class="option-btn" onclick="window.location.href='text-input.html'" style="min-height: 100px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 25px 50px; border-radius: 12px; font-size: 28px; white-space: normal; word-wrap: break-word; flex-wrap: wrap; width: 100%; max-width: 700px;">Text Input</button>
     </div>
-    <!-- Main Area (hidden until option selected) -->
-    <div class="main-area" id="mainArea" style="display:none;">
-        <button class="back-btn" id="backBtn">Back</button>
-        <div class="side-by-side">
-            <div class="image-area" id="imageArea">
-                <video id="video" autoplay playsinline muted style="display:none;"></video>
-                <canvas id="photoCanvas" style="display:none;"></canvas>
-                <img id="uploadedImg" style="display:none; max-width:100%;" />
-                <canvas id="processedCanvas" style="display:none; max-width:100%; border:1px solid #aaa;"></canvas>
-                <button id="toggleProcessedBtn" class="option-btn" style="display:none; margin-top:8px;">Show Processed Image</button>
-            </div>
-            <div class="output-area" id="outputArea">
-                <strong style="font-size:1.3em;">Decoded Text:</strong>
-                <pre id="decodedText" style="font-size:1.2em;">// ...binary will appear here...</pre>
-                <div id="modelStatus" style="margin-top:10px; font-size:0.9em; color:#666;">
-                    Model Status: Loading...
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- File input for image upload (hidden) -->
-    <input type="file" id="fileInput" accept="image/*" style="display:none;" />
     
-    <script>
-        // Custom Gill Sans model configuration
-        let customModelLoaded = false;
-        let tesseractWorker = null;
-        const modelStatus = document.getElementById('modelStatus');
-        
-        // Load custom Gill Sans model
-        async function loadCustomModel() {
-            try {
-                modelStatus.textContent = 'Model Status: Loading custom Gill Sans model...';
-                
-                // Create worker without logger to avoid cloning issues
-                const worker = await Tesseract.createWorker();
-                
-                // Try to load custom model
-                await worker.loadLanguage('./tessdata/gillsans.traineddata');
-                await worker.initialize('gillsans');
-                
-                customModelLoaded = true;
-                modelStatus.textContent = 'Model Status: ✓ Custom Gill Sans model loaded';
-                modelStatus.style.color = '#4CAF50';
-                
-                return worker;
-            } catch (error) {
-                console.warn('Custom model not found, falling back to English:', error);
-                modelStatus.textContent = 'Model Status: Using default English model (custom model not available)';
-                modelStatus.style.color = '#FF9800';
-                
-                // Fallback to default English model
-                const worker = await Tesseract.createWorker();
-                await worker.loadLanguage('eng');
-                await worker.initialize('eng');
-                
-                return worker;
-            }
-        }
-        
-        // Updated OCR functions to use custom worker
-        async function performOCR(imageDataUrl) {
-            if (!tesseractWorker) {
-                tesseractWorker = await loadCustomModel();
-            }
-            
-            try {
-                const result = await tesseractWorker.recognize(imageDataUrl);
-                console.log("Raw Tesseract OCR result:", result.data.text);
-                
-                const binaryStr = result.data.text.replace(/\s+/g, ' ').trim();
-                console.log("Normalized OCR text:", binaryStr);
-                
-                const ascii = binaryToAscii(binaryStr);
-                return ascii || '// No valid binary detected';
-            } catch (error) {
-                console.error("OCR error:", error);
-                return '// OCR error';
-            }
-        }
-
-        // New UI elements
-        const selectionMenu = document.getElementById('selectionMenu');
-        const mainArea = document.getElementById('mainArea');
-        const takePhotoBtn = document.getElementById('takePhotoBtn');
-        const insertPhotoBtn = document.getElementById('insertPhotoBtn');
-        const scanCameraBtn = document.getElementById('scanCameraBtn');
-        const backBtn = document.getElementById('backBtn');
-        const photoCanvas = document.getElementById('photoCanvas');
-        const uploadedImg = document.getElementById('uploadedImg');
-        const fileInput = document.getElementById('fileInput');
-        const video = document.getElementById('video');
-        const decodedText = document.getElementById('decodedText');
-        const processedCanvas = document.getElementById('processedCanvas');
-        const toggleProcessedBtn = document.getElementById('toggleProcessedBtn');
-        let ocrInterval = null;
-        let currentMode = null;
-        let processedCanvasVisible = false;
-
-        // Helper: Convert binary string to ASCII (more tolerant)
-        function binaryToAscii(binaryStr, printableOnly = false) {
-            console.log("Input binary string:", binaryStr);
-            
-            // More aggressive OCR error correction
-            let cleaned = binaryStr
-                // Common OCR mistakes for 1: l, I, |, !, 1
-                .replace(/[lI|!]/g, '1')
-                // Common OCR mistakes for 0: O, o, Q, D, []
-                .replace(/[OoQD\[\]]/g, '0')
-                // Handle mixed character sequences like "OI" -> "01", "IO" -> "10"
-                .replace(/OI/g, '01')
-                .replace(/IO/g, '10')
-                .replace(/Ol/g, '01')
-                .replace(/lO/g, '10')
-                // Remove any remaining non-binary characters and whitespace inconsistencies
-                .replace(/[^01\s]/g, '')
-                // Normalize whitespace
-                .replace(/\s+/g, ' ')
-                .trim();
-            
-            console.log("After OCR corrections:", cleaned);
-            
-            // Split by whitespace and filter to only valid 8-character binary strings
-            const words = cleaned.split(/\s+/).filter(word => word.length > 0);
-            console.log("Split into words:", words);
-            
-            // Only keep exactly 8-character strings that are pure binary
-            const validBinaries = words.filter(w => w.length === 8 && /^[01]{8}$/.test(w));
-            
-            // Log what we're keeping vs discarding
-            const discarded = words.filter(w => w.length !== 8 || !/^[01]{8}$/.test(w));
-            
-            console.log("Valid 8-bit binary groups:", validBinaries);
-            
-            if (discarded.length > 0) {
-                console.log("Discarded invalid sequences:", discarded);
-            }
-            
-            if (validBinaries.length === 0) {
-                console.log("No valid 8-bit binary groups found after cleaning.");
-                return '';
-            }
-            
-            // Convert binary to ASCII
-            let ascii = validBinaries.map(bin => {
-                const charCode = parseInt(bin, 2);
-                const char = String.fromCharCode(charCode);
-                console.log(`${bin} -> ${charCode} -> "${char}"`);
-                return char;
-            }).join('');
-            
-            console.log("Raw ASCII conversion:", ascii);
-            
-            if (printableOnly) {
-                const originalLength = ascii.length;
-                ascii = ascii.split('').filter(c => {
-                    const code = c.charCodeAt(0);
-                    return code >= 32 && code <= 126;
-                }).join('');
-                console.log(`Filtered to printable only: ${originalLength} → ${ascii.length} chars`);
-            }
-            
-            console.log("Final ASCII output:", ascii);
-            return ascii;
-        }
-
-        // Hide main area, show selection menu
-        function showSelectionMenu() {
-            mainArea.style.display = 'none';
-            selectionMenu.style.display = 'flex';
-            video.style.display = 'none';
-            photoCanvas.style.display = 'none';
-            uploadedImg.style.display = 'none';
-            decodedText.textContent = '// ...binary will appear here...';
-            if (ocrInterval) clearInterval(ocrInterval);
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
-            }
-            // Hide capture button if present
-            const captureBtn = document.getElementById('captureBtn');
-            if (captureBtn) captureBtn.style.display = 'none';
-        }
-        // Show main area, hide selection menu
-        function showMainArea(mode) {
-            selectionMenu.style.display = 'none';
-            mainArea.style.display = 'block';
-            currentMode = mode;
-        }
-        // Take Photo Mode
-        takePhotoBtn.onclick = async () => {
-            showMainArea('photo');
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                try {
-                    // Try recommended facingMode first
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                    video.srcObject = stream;
-                    video.style.display = 'block';
-                    photoCanvas.style.display = 'none';
-                    uploadedImg.style.display = 'none';
-                    decodedText.textContent = '// ...binary will appear here...';
-                    // Add "Capture" button
-                    let btn = document.getElementById('captureBtn');
-                    if (!btn) {
-                        btn = document.createElement('button');
-                        btn.id = 'captureBtn';
-                        btn.textContent = 'Capture Photo';
-                        btn.className = 'option-btn';
-                        btn.onclick = () => {
-                            photoCanvas.width = video.videoWidth || 640;
-                            photoCanvas.height = video.videoHeight || 480;
-                            photoCanvas.getContext('2d').drawImage(video, 0, 0, photoCanvas.width, photoCanvas.height);
-                            photoCanvas.style.display = 'block';
-                            video.style.display = 'none';
-                            btn.style.display = 'none';
-                            if (video.srcObject) {
-                                video.srcObject.getTracks().forEach(track => track.stop());
-                                video.srcObject = null;
-                            }
-                            runOcrOnCanvas(photoCanvas);
-                        };
-                        mainArea.insertBefore(btn, mainArea.firstChild.nextSibling);
-                    } else {
-                        btn.style.display = 'block';
-                    }
-                } catch (err) {
-                    // Fallback to any camera
-                    try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                        video.srcObject = stream;
-                        video.style.display = 'block';
-                        photoCanvas.style.display = 'none';
-                        uploadedImg.style.display = 'none';
-                        decodedText.textContent = '// ...binary will appear here...';
-                        let btn = document.getElementById('captureBtn');
-                        if (!btn) {
-                            btn = document.createElement('button');
-                            btn.id = 'captureBtn';
-                            btn.textContent = 'Capture Photo';
-                            btn.className = 'option-btn';
-                            btn.onclick = () => {
-                                photoCanvas.width = video.videoWidth || 640;
-                                photoCanvas.height = video.videoHeight || 480;
-                                photoCanvas.getContext('2d').drawImage(video, 0, 0, photoCanvas.width, photoCanvas.height);
-                                photoCanvas.style.display = 'block';
-                                video.style.display = 'none';
-                                btn.style.display = 'none';
-                                if (video.srcObject) {
-                                    video.srcObject.getTracks().forEach(track => track.stop());
-                                    video.srcObject = null;
-                                }
-                                runOcrOnCanvas(photoCanvas);
-                            };
-                            mainArea.insertBefore(btn, mainArea.firstChild.nextSibling);
-                        } else {
-                            btn.style.display = 'block';
-                        }
-                    } catch (err2) {
-                        alert('Camera access denied or not available.');
-                        showSelectionMenu();
-                    }
-                }
-            }
-        };
-        // Insert Photo Mode
-        insertPhotoBtn.onclick = () => {
-            showMainArea('upload');
-            video.style.display = 'none';
-            photoCanvas.style.display = 'none';
-            uploadedImg.style.display = 'none';
-            decodedText.textContent = '// ...binary will appear here...';
-            fileInput.value = '';
-            fileInput.click();
-        };
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    uploadedImg.src = ev.target.result;
-                    uploadedImg.style.display = 'block';
-                    photoCanvas.style.display = 'none';
-                    video.style.display = 'none';
-                    runOcrOnImage(uploadedImg);
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-        // Scan from Camera Feed Mode
-        scanCameraBtn.onclick = async () => {
-            showMainArea('live');
-            video.style.display = 'block';
-            photoCanvas.style.display = 'none';
-            uploadedImg.style.display = 'none';
-            decodedText.textContent = '// ...binary will appear here...';
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                    video.srcObject = stream;
-                    startOcr();
-                } catch (err) {
-                    try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                        video.srcObject = stream;
-                        startOcr();
-                    } catch (err2) {
-                        alert('Camera access denied or not available.');
-                        showSelectionMenu();
-                    }
-                }
-            } else {
-                alert('Camera not supported in this browser. Make sure you are using HTTPS and a modern browser.');
-                showSelectionMenu();
-            }
-        };
-        // Back button
-        backBtn.onclick = () => {
-            showSelectionMenu();
-        };
-        // Toggle processed image visibility
-        toggleProcessedBtn.onclick = () => {
-            processedCanvasVisible = !processedCanvasVisible;
-            processedCanvas.style.display = processedCanvasVisible ? 'block' : 'none';
-            toggleProcessedBtn.textContent = processedCanvasVisible ? 'Hide Processed Image' : 'Show Processed Image';
-        };
-        // Helper: Grayscale conversion
-        function preprocessCanvas(canvas, debugCanvas) {
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            // Grayscale conversion
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                let avg = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
-                imageData.data[i] = imageData.data[i+1] = imageData.data[i+2] = avg;
-            }
-            ctx.putImageData(imageData, 0, 0);
-            // If debugging, copy to debugCanvas
-            if (debugCanvas) {
-                debugCanvas.width = canvas.width;
-                debugCanvas.height = canvas.height;
-                debugCanvas.getContext('2d').putImageData(imageData, 0, 0);
-                toggleProcessedBtn.style.display = 'inline-block';
-                processedCanvas.style.display = processedCanvasVisible ? 'block' : 'none';
-                toggleProcessedBtn.textContent = processedCanvasVisible ? 'Hide Processed Image' : 'Show Processed Image';
-            } else {
-                toggleProcessedBtn.style.display = 'none';
-                processedCanvas.style.display = 'none';
-            }
-        }
-        // Helper: Minimum image/canvas size for OCR
-        function isImageLargeEnough(width, height, minWidth = 3, minHeight = 36) {
-            return width >= minWidth && height >= minHeight;
-        }
-        // OCR for still image (canvas) with preprocessing
-        function runOcrOnCanvas(canvas) {
-            if (!isImageLargeEnough(canvas.width, canvas.height)) {
-                decodedText.textContent = '// Image too small to scan!';
-                return;
-            }
-            
-            decodedText.textContent = 'Scanning...';
-            const scale = 2;
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width * scale;
-            tempCanvas.height = canvas.height * scale;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
-            
-            preprocessCanvas(tempCanvas, processedCanvas);
-            const imageDataUrl = tempCanvas.toDataURL('image/png');
-            
-            performOCR(imageDataUrl).then(result => {
-                decodedText.textContent = result;
-            });
-        }
-
-        // OCR for uploaded image with preprocessing
-        function runOcrOnImage(img) {
-            img.onload = async function() {
-                const scale = 2;
-                const w = img.naturalWidth * scale;
-                const h = img.naturalHeight * scale;
-                
-                if (!isImageLargeEnough(w, h)) {
-                    decodedText.textContent = '// Image too small to scan!';
-                    return;
-                }
-                
-                photoCanvas.width = w;
-                photoCanvas.height = h;
-                const ctx = photoCanvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, photoCanvas.width, photoCanvas.height);
-                photoCanvas.style.display = 'none';
-                
-                preprocessCanvas(photoCanvas, processedCanvas);
-                const imageDataUrl = photoCanvas.toDataURL('image/png');
-                
-                decodedText.textContent = 'Scanning...';
-                const result = await performOCR(imageDataUrl);
-                decodedText.textContent = result;
-            };
-            
-            if (img.complete) {
-                img.onload();
-            }
-        }
-
-        async function startOcr() {
-            const canvas = document.createElement('canvas');
-            const squareSize = 640;
-            canvas.width = squareSize;
-            canvas.height = squareSize;
-            const ctx = canvas.getContext('2d');
-            
-            ocrInterval = setInterval(async () => {
-                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    const vw = video.videoWidth || 640;
-                    const vh = video.videoHeight || 480;
-                    
-                    if (!isImageLargeEnough(vw, vh)) {
-                        decodedText.textContent = '// Camera image too small!';
-                        return;
-                    }
-                    
-                    const sx = Math.floor((vw - squareSize) / 2);
-                    const sy = Math.floor((vh - squareSize) / 2);
-                    ctx.drawImage(video, sx, sy, squareSize, squareSize, 0, 0, squareSize, squareSize);
-                    
-                    preprocessCanvas(canvas, processedCanvas);
-                    const imageDataUrl = canvas.toDataURL('image/png');
-                    
-                    decodedText.textContent = "Scanning...";
-                    const result = await performOCR(imageDataUrl);
-                    decodedText.textContent = result;
-                }
-            }, 1000); 
-        }
-
-        window.onload = async () => {
-            showSelectionMenu();
-            // Pre-load the custom model
-            tesseractWorker = await loadCustomModel();
-        };
-    </script>
+    <script src="binary-decoder.js"></script>
 </body>
 </html>
