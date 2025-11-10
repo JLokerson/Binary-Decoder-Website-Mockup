@@ -3,10 +3,12 @@ function generateBinaryBackground() {
     const fullBinaryString = "01010100 01101000 01101001 01110011 00100000 01110111 01100101 01100010 01110011 01101001 01110100 01100101 00100000 01110111 01100001 01110011 00100000 01101101 01100001 01100100 01100101 00100000 01100010 01111001 00100000 01001010 01110101 01101100 01101001 01100001 00100000 01001100 01101111 01101011 01100101 01110010 01110011 01101111 01101110 ";
     const backgroundDiv = document.getElementById('binaryBackground');
     
+    // Use fixed pixel sizes that don't scale with zoom
     const fontSize = 14;
-    const lineHeight = fontSize * 1.2;
-    const charWidth = fontSize * 0.6;
+    const lineHeight = 16.8; // Fixed pixel value instead of calculated
+    const charWidth = 8.4; // Fixed pixel value instead of calculated
     
+    // Use physical viewport dimensions
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
@@ -44,6 +46,10 @@ function generateBinaryBackground() {
     }
     
     backgroundDiv.textContent = fullPattern;
+    
+    // Set fixed font size in pixels to prevent zoom scaling
+    backgroundDiv.style.fontSize = '14px';
+    backgroundDiv.style.lineHeight = '16.8px';
 }
 
 // Tesseract worker
