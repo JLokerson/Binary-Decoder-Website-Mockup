@@ -1,0 +1,26 @@
+{
+  "name": "binary-decoder-website",
+  "version": "1.0.0",
+  "description": "A versatile binary decoder that converts binary code to ASCII text using multiple input methods",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server . -p 3000 -o",
+    "build": "echo 'Build complete - static files ready for deployment'",
+    "deploy": "gh-pages -d .",
+    "generate-qr": "node generate-qr.js"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.3"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "gh-pages": "^6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/julia/Binary-Decoder-Website-Mockup.git"
+  },
+  "keywords": ["binary", "decoder", "ascii", "ocr", "camera"],
+  "author": "Julia",
+  "license": "MIT"
+}
