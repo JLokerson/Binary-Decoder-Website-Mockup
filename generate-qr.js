@@ -2,7 +2,7 @@ const QRCode = require('qrcode');
 const fs = require('fs');
 
 // Replace with your actual GitHub Pages URL
-const websiteUrl = 'https://julia.github.io/Binary-Decoder-Website-Mockup/';
+const websiteUrl = 'https://jlokerson.github.io/Binary-Decoder-Website-Mockup/';
 
 async function generateQRCode() {
     try {

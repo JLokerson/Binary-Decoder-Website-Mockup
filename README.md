@@ -4,7 +4,7 @@ This website takes a photo, image file, or live video feed and translates any bi
 
 ## 🚀 Live Demo
 
-**Website URL:** [https://julia.github.io/Binary-Decoder-Website-Mockup/](https://julia.github.io/Binary-Decoder-Website-Mockup/)
+**Website URL:** [https://jlokerson.github.io/Binary-Decoder-Website-Mockup/](https://jlokerson.github.io/Binary-Decoder-Website-Mockup/)
 
 **QR Code for Mobile Access:**
 ![QR Code](qr-code.png)
