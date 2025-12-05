@@ -2,61 +2,199 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Take Photo - Binary Decoder</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-        body {
-            background: linear-gradient(to bottom, #A8A8A8 0%, #4e4e4e 100%);
-            min-height: 100vh;
-            position: relative;
+        html, body {
+            background: linear-gradient(to bottom, #A8A8A8 0%, #4e4e4e 100%) !important;
+            min-height: 100vh !important;
+            position: relative !important;
+            color: white !important;
         }
         
-        .option-btn, .back-btn, #captureBtn {
+        /* Smaller description box with black text */
+        .description {
+            max-width: 400px !important;
+            font-size: 1em !important;
+            padding: 0.8em !important;
+        }
+        
+        .description p, .description p strong {
+            color: black !important;
+        }
+        
+        /* Make decoded text black but keep label white */
+        #decodedText {
+            color: black !important;
+            width: 100% !important;
+            height: 150px !important;
+            min-height: 150px !important;
+            max-height: 150px !important;
+            overflow: auto !important;
+            resize: none !important;
+            box-sizing: border-box !important;
+        }
+        
+        /* Override output-area to match description box styling */
+        .output-area {
+            margin: 2em auto !important;
+            max-width: 320px !important;
+            width: 320px !important;
+            min-width: 320px !important;
+            background: #fff !important;
+            padding: 0.8em !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+            font-size: 1em !important;
+            min-height: auto !important;
+            max-height: none !important;
+            border: none !important;
+            display: block !important;
+            flex-direction: initial !important;
+            align-items: initial !important;
+            justify-content: initial !important;
+            flex-shrink: 0 !important;
+            flex-grow: 0 !important;
+            box-sizing: border-box !important;
+        }
+        
+        .output-area strong {
+            color: black !important;
+        }
+        
+        /* Camera styling - removed #photoCanvas */
+        #video {
+            width: 100% !important;
+            max-width: 320px !important;
+            height: 240px !important;
+            object-fit: cover !important;
+            border-radius: 8px !important;
+            background: #333 !important;
+            display: block !important;
+            margin: 20px auto !important;
+        }
+
+        /* Make header same height as index page but empty */
+        header {
+            min-height: 120px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        /* Center buttons below description and make them smaller */
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin: 20px auto;
+            max-width: 400px;
+            text-align: center;
+        } 
+        
+        /* Orange button styling - smaller size */
+        .option-btn, .back-btn, #startBtn, #captureBtn {
             color: #F56600 !important;
             border: 2px solid #F56600 !important;
             background-color: white !important;
+            padding: 12px 24px !important;
+            font-size: 16px !important;
+            min-width: 160px !important;
+            width: auto !important;
+            margin: 0 !important;
         }
         
-        .option-btn:hover, .back-btn:hover, #captureBtn:hover {
+        .option-btn:hover, .back-btn:hover, #startBtn:hover, #captureBtn:hover {
             background-color: #F56600 !important;
+            color: white !important;
+        }
+
+        /* Fix mobile centering for output area */
+        @media (max-width: 900px) {
+            header {
+                min-height: 80px !important;
+            }
+            
+            .button-container {
+                max-width: 300px;
+            }
+            
+            .description, .output-area {
+                max-width: 300px !important;
+                width: 300px !important;
+                min-width: 300px !important;
+                margin: 1em auto !important;
+            }
+            
+            #video {
+                max-width: 300px !important;
+                width: 300px !important;
+                height: 225px !important;
+                margin: 20px auto !important;
+                display: block !important;
+            }
+            
+            .main-area {
+                padding: 0 10px !important;
+                margin: 1em auto !important;
+            }
+            
+            .main-area > div {
+                text-align: center !important;
+            }
+             
+            #decodedText {
+                height: 120px !important;
+                min-height: 120px !important;
+                max-height: 120px !important;
+            }
+        }
+        
+        /* Ensure text is white except description and output area */
+        div:not(.description *):not(.output-area *), span:not(.description *):not(.output-area *), strong:not(.description *):not(.output-area *) {
             color: white !important;
         }
     </style>
 </head>
-<body>
-    <!-- Binary Background Pattern -->
-    <div id="binaryBackground" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; font-family: monospace; font-size: 14px; color: rgba(255, 255, 255, 0.15); line-height: 1.2; padding: 20px; overflow: hidden; white-space: pre-wrap; word-wrap: break-word;"></div>
-
+<body> 
     <header>
-        <h1>Take Photo - Binary Decoder</h1>
+        <!-- Empty header to maintain grey banner -->
     </header>
+    
+    <div class="description">
+        <p>
+            <strong>Take Photo</strong><br>
+            Click "Start Camera" to activate your device camera, then click "Capture Photo" to take a picture of binary code. The image will be automatically processed using OCR technology to extract and decode the binary text.
+        </p>
+    </div>
+
+    <div class="button-container">
+        <button class="back-btn" onclick="window.location.href='index.html'">Back to Menu</button>
+        <button id="startBtn" class="option-btn">Start Camera</button>
+        <button id="captureBtn" class="option-btn" style="display:none;">Capture Photo</button>
+        <div id="cameraStatus" style="margin-top: 20px; font-size: 1.1em; color: white; text-align: center;"></div>
+    </div>
 
     <div class="main-area">
-        <button class="back-btn" onclick="window.location.href='index.html'">Back to Menu</button>
-        <div class="side-by-side">
-            <div class="image-area">
-                <video id="video" autoplay playsinline muted style="display:none;"></video>
-                <canvas id="photoCanvas" style="display:none;"></canvas>
-                <canvas id="processedCanvas" style="display:none; max-width:100%; border:1px solid #aaa;"></canvas>
-                <button id="captureBtn" style="display:none; margin-top:8px; padding: 15px 30px; font-size: 20px; min-width: 200px; width: 200px;">Capture Photo</button>
-                <button id="toggleProcessedBtn" class="option-btn" style="display:none; margin-top:8px; padding: 12px 25px; font-size: 18px; min-width: 180px; width: 180px;">Show Processed Image</button>
-                <button id="startBtn" class="option-btn" style="margin-top:10px; padding: 20px 40px; font-size: 22px; min-width: 220px; width: 220px;">Start Camera</button>
-            </div>
-            <div class="output-area" style="align-items: flex-start; justify-content: flex-start; padding-top: 1em;">
-                <strong style="font-size:0.9em; margin-bottom: 2px;">Decoded Text:</strong>
-                <pre id="decodedText" style="font-size:0.9em; margin-top: -10px;">// Click start to begin camera...</pre>
-            </div>
+        <div style="text-align: center;">
+            <video id="video" autoplay playsinline muted style="display:none;"></video>
+        </div>
+        <div class="output-area">
+            <strong style="font-size:0.9em; margin-bottom: 2px;">Decoded Text:</strong>
+            <pre id="decodedText" style="font-size:0.9em; margin-top: -10px;">// Click start to begin camera...</pre>
         </div>
     </div>
 
     <script src="binary-decoder.js"></script>
     <script>
-        let processedCanvasVisible = false;
-        
         document.getElementById('startBtn').onclick = async () => {
             const startBtn = document.getElementById('startBtn');
+            const cameraStatus = document.getElementById('cameraStatus');
+            
             startBtn.style.display = 'none';
             
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -71,6 +209,7 @@
                     video.srcObject = stream;
                     video.style.display = 'block';
                     decodedText.textContent = '// Camera ready - click capture to scan...';
+                    cameraStatus.textContent = 'Camera active - ready to capture';
                     document.getElementById('captureBtn').style.display = 'block';
                 } catch (err) {
                     try {
@@ -78,11 +217,13 @@
                         video.srcObject = stream;
                         video.style.display = 'block';
                         decodedText.textContent = '// Camera ready - click capture to scan...';
+                        cameraStatus.textContent = 'Camera active - ready to capture';
                         document.getElementById('captureBtn').style.display = 'block';
                     } catch (err2) {
                         console.error('Camera access error:', err2);
                         alert('Camera access denied or not available.');
                         decodedText.textContent = '// Camera access failed';
+                        cameraStatus.textContent = '';
                         startBtn.style.display = 'block';
                     }
                 }
@@ -90,13 +231,13 @@
         };
 
         document.getElementById('captureBtn').onclick = () => {
-            const canvas = document.getElementById('photoCanvas');
+            const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth || 640;
             canvas.height = video.videoHeight || 480;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            canvas.style.display = 'block';
-            video.style.display = 'none';
+            
             document.getElementById('captureBtn').style.display = 'none';
+            document.getElementById('cameraStatus').textContent = 'Photo captured - processing...';
             
             if (video.srcObject) {
                 video.srcObject.getTracks().forEach(track => track.stop());
@@ -104,12 +245,6 @@
             }
             
             runOcrOnCanvas(canvas);
-        };
-
-        document.getElementById('toggleProcessedBtn').onclick = () => {
-            processedCanvasVisible = !processedCanvasVisible;
-            document.getElementById('processedCanvas').style.display = processedCanvasVisible ? 'block' : 'none';
-            document.getElementById('toggleProcessedBtn').textContent = processedCanvasVisible ? 'Hide Processed Image' : 'Show Processed Image';
         };
     </script>
 </body>

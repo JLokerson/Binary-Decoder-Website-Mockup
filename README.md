@@ -1,179 +1,276 @@
-# Binary Decoder Website
+# Binary Decoder Website Documentation
 
-This website takes a photo, image file, or live video feed and translates any binary text into ASCII.
+A versatile web application that converts binary code to ASCII text using multiple input methods including camera scanning, image upload, and direct text input.
 
-## 🚀 Live Demo
+## 🌐 Live Demo
+Visit the deployed application: [Binary Decoder](https://wfic-util-01.clemson.edu/decoder/)
 
-**Website URL:** [https://jlokerson.github.io/Binary-Decoder-Website-Mockup/](https://jlokerson.github.io/Binary-Decoder-Website-Mockup/)
+## 📱 Features
+- **Real-time binary decoding** from multiple input sources
+- **Camera integration** for live scanning and photo capture
+- **OCR technology** using Tesseract.js for image-to-text conversion
+- **Mobile-responsive design** optimized for all devices
+- **Secure HTTPS** camera access with localhost fallback
 
-**QR Code for Mobile Access:**
-![QR Code](qr-code.png)
+## 📄 Page Documentation
 
-## 📱 Quick Access
+### 🏠 index.html - Main Menu Page
+**Purpose**: Landing page that provides navigation to all decoder methods.
 
-Scan the QR code above with your mobile device to instantly access the Binary Decoder website!
+**Features**:
+- Animated binary background pattern for visual appeal
+- Four main navigation options with large, accessible buttons
+- Responsive design that adapts to mobile and desktop
+- Clean, professional interface with orange accent colors
 
-## 🛠️ Dependencies for Running Locally
+**How it works**:
+1. Displays welcome message and feature overview
+2. Shows four input method options as large buttons
+3. Each button navigates to a specialized decoder page
+4. Background generates dynamic binary pattern on load
 
-To run this project locally, install:
+**Technical details**:
+- Uses CSS gradients for background styling
+- Implements responsive button layout with flexbox
+- Loads binary background image with CSS fallback
+- Preloads Tesseract.js OCR engine for faster subsequent pages
 
-- [Node.js](https://nodejs.org/) (v16 or higher recommended)
-- [npm](https://www.npmjs.com/) (comes with Node.js)
+---
 
-## 🏃‍♀️ Running Locally
+### ⌨️ text-input.html - Direct Text Input Page
+**Purpose**: Allows users to manually type or paste binary code for real-time decoding.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/julia/Binary-Decoder-Website-Mockup.git
-   cd Binary-Decoder-Website-Mockup
-   ```
+**Features**:
+- Large text area for binary input with monospace font
+- Real-time decoding as user types
+- Supports 8-bit binary groups separated by spaces
+- Helpful input format tips and validation
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+**How it works**:
+1. User enters binary code in the textarea (e.g., "01001000 01100101")
+2. JavaScript listens for input events and triggers decoding
+3. Binary groups are validated and converted to ASCII characters
+4. Results display instantly in the output area
 
-3. Start local development server:
-   ```bash
-   npm start
-   ```
+**Input format**:
+- Accepts binary in 8-bit groups: `01001000 01100101 01101100`
+- Automatically filters non-binary characters
+- Corrects common OCR mistakes (I→1, O→0, etc.)
+- Requires space separation between 8-bit groups for optimal parsing
 
-4. Open your browser to `http://localhost:3000`
+**Technical implementation**:
+- Uses `oninput` event listener for real-time processing
+- Calls `binaryToAscii()` function from binary-decoder.js
+- Validates input format before attempting conversion
+- Provides user feedback for invalid input patterns
 
-## 🚀 Deployment Instructions
+---
 
-### Method 1: GitHub Pages (Recommended - Free)
+### 📷 take-photo.html - Camera Photo Capture Page
+**Purpose**: Captures photos using device camera and extracts binary code via OCR.
 
-#### Step 1: Create GitHub Repository
-1. Go to [github.com](https://github.com) and sign in
-2. Click the "+" icon in top right → "New repository"
-3. Name it `Binary-Decoder-Website-Mockup` (or any name you prefer)
-4. Make sure it's **Public** (required for free GitHub Pages)
-5. Click "Create repository"
+**Features**:
+- Camera access with environment (rear) camera preference
+- Photo capture with automatic OCR processing
+- HTTPS/localhost security requirement handling
+- Mobile and desktop camera support
 
-#### Step 2: Upload Your Code to GitHub
-**Option A - Using Git Command Line:**
+**How it works**:
+1. Click "Start Camera" to request camera permissions
+2. Camera feed displays in video element (320x240px)
+3. Click "Capture Photo" to take a snapshot
+4. Photo is automatically processed through Tesseract OCR
+5. Extracted text is decoded from binary to ASCII
+
+**Security requirements**:
+- Requires HTTPS or localhost for camera access
+- Graceful fallback to front camera if rear unavailable
+- Clear error messages for permission denials
+- Stops camera stream after capture to preserve privacy
+
+**Processing pipeline**:
+1. Canvas captures current video frame at 2x resolution
+2. Image preprocessing applies grayscale conversion
+3. Tesseract OCR extracts text from processed image
+4. Binary decoder converts OCR results to ASCII text
+
+---
+
+### 🖼️ insert-photo.html - Image Upload Page  
+**Purpose**: Processes uploaded image files to extract and decode binary code.
+
+**Features**:
+- File input dialog for image selection
+- Image preview before processing
+- Automatic OCR and binary decoding
+- Support for common image formats (PNG, JPG, etc.)
+
+**How it works**:
+1. Click "Select Image File" to open file dialog
+2. Choose image containing binary code text
+3. Image displays as preview in 320x240px container
+4. OCR automatically processes the uploaded image
+5. Binary text is extracted and converted to ASCII
+
+**Image processing**:
+- Creates temporary canvas for OCR processing at 2x scale
+- Applies grayscale preprocessing for better OCR accuracy
+- Uses Tesseract.js with English language model
+- Handles various image formats through HTML5 File API
+
+**User feedback**:
+- Shows upload status during processing
+- Displays selected image for verification
+- Button text changes to "Select Different Image" after upload
+- Clear error messages for processing failures
+
+---
+
+### 📡 scan-camera.html - Live Camera Scanning Page
+**Purpose**: Provides continuous real-time scanning of binary code through camera feed.
+
+**Features**:
+- Live camera feed with continuous OCR scanning
+- Real-time binary detection and decoding
+- Start/stop controls for scanning session
+- Optimized for detecting binary code in camera view
+
+**How it works**:
+1. Click "Start Live Scan" to activate camera
+2. Camera feed begins and OCR scanning starts automatically
+3. System captures frames every 1000ms (1 second intervals)
+4. Each frame is processed through OCR and binary decoder
+5. Results update in real-time as binary code is detected
+
+**Scanning process**:
+- Extracts 640x640 square region from center of camera feed
+- Processes frames at regular intervals to balance performance
+- Applies image preprocessing for optimal OCR results
+- Continuously updates decoded text output
+
+**Performance optimization**:
+- 1-second intervals prevent excessive processing
+- Square crop focuses on center area of camera view
+- Grayscale conversion improves OCR accuracy
+- Automatic cleanup of camera resources when stopped
+
+---
+
+## 🛠️ Core JavaScript Functions
+
+### binary-decoder.js - Main Processing Engine
+
+#### `binaryToAscii(binaryStr, printableOnly = false)`
+Converts binary string to ASCII text with OCR error correction.
+
+**Parameters**:
+- `binaryStr`: Input binary string (may contain spaces and OCR errors)
+- `printableOnly`: Filter to only printable ASCII characters (32-126)
+
+**Error correction**:
+- Converts common OCR mistakes: `l,I,|,!` → `1` and `O,o,Q,D,[,]` → `0`
+- Handles mixed case and special character substitutions
+- Filters non-binary characters and normalizes spacing
+
+**Process**:
+1. Apply OCR corrections to convert similar-looking characters
+2. Remove non-binary characters and normalize whitespace
+3. Split into words and validate 8-bit binary groups
+4. Convert each valid binary group to ASCII character
+5. Optionally filter to printable characters only
+
+#### `performOCR(imageDataUrl)`
+Processes images through Tesseract OCR engine for text extraction.
+
+**Process**:
+1. Initialize Tesseract worker if not already loaded
+2. Process image data URL through OCR recognition
+3. Normalize extracted text by removing extra whitespace
+4. Apply binary conversion with error correction
+5. Return decoded ASCII text or error message
+
+#### `generateBinaryBackground()`
+Creates animated binary pattern background with image and CSS fallbacks.
+
+**Implementation**:
+1. Attempts to load binary-background.png image
+2. On success: applies repeating background pattern
+3. On failure: generates CSS-based fallback pattern
+4. Adjusts opacity and sizing for mobile vs desktop
+5. Handles orientation changes and visibility events
+
+## 📱 Mobile Responsiveness
+
+### Responsive Design Features
+- **Breakpoint**: 900px width for mobile/desktop distinction
+- **Header scaling**: Reduced height and font size on mobile
+- **Button optimization**: Full-width buttons with larger touch targets
+- **Camera sizing**: Fixed dimensions that work across devices
+- **Text scaling**: Adjusted font sizes for readability
+
+### Mobile-specific Optimizations
+- **Camera handling**: Prefers rear camera, falls back gracefully
+- **Touch targets**: Minimum 44px height for accessibility
+- **Viewport handling**: Proper scaling and zoom prevention
+- **Performance**: Optimized OCR intervals and image processing
+
+## 🔧 Technical Architecture
+
+### Dependencies
+- **Tesseract.js v5**: OCR engine for image-to-text conversion
+- **HTML5 APIs**: Camera access, File API, Canvas processing
+- **CSS3**: Gradients, flexbox, responsive design
+- **Vanilla JavaScript**: No external frameworks for maximum compatibility
+
+### Security Considerations
+- **HTTPS requirement** for camera access in production
+- **Localhost exception** for development environments
+- **Permission handling** with graceful error recovery
+- **Privacy protection** by stopping camera streams after use
+
+### Performance Features
+- **Lazy loading**: Tesseract worker loaded on demand
+- **Preprocessing**: Image optimization before OCR processing
+- **Caching**: Reuse of OCR worker across multiple operations
+- **Debouncing**: Controlled intervals for live scanning
+
+## 🚀 Deployment
+
+### GitHub Pages Deployment
+- Automated deployment via GitHub Actions
+- Static file hosting with HTTPS support
+- Custom domain configuration available
+- Continuous deployment from main branch
+
+### Local Development
 ```bash
-# Initialize git in your project folder
-git init
-
-# Add GitHub repository as remote (replace 'yourusername' with your GitHub username)
-git remote add origin https://github.com/yourusername/Binary-Decoder-Website-Mockup.git
-
-# Add all files
-git add .
-
-# Commit files
-git commit -m "Initial commit - Binary Decoder Website"
-
-# Push to GitHub
-git push -u origin main
+npm install          # Install dependencies
+npm start           # Start local server on port 3000
+npm run generate-qr # Generate QR codes for sharing
 ```
 
-**Option B - Using GitHub Desktop:**
-1. Download [GitHub Desktop](https://desktop.github.com/)
-2. Click "Add an Existing Repository from your Hard Drive"
-3. Select your project folder
-4. Click "Publish repository" and choose your GitHub account
+### Production Setup
+- Ensure HTTPS for camera functionality
+- Configure proper MIME types for static assets
+- Set up CDN for Tesseract.js if needed
+- Monitor performance and error logging
 
-**Option C - Upload Files Directly:**
-1. On your empty GitHub repository page, click "uploading an existing file"
-2. Drag and drop all your project files
-3. Click "Commit changes"
+## 📊 Browser Compatibility
+- **Modern browsers**: Chrome 60+, Firefox 55+, Safari 11+, Edge 79+
+- **Camera support**: Requires getUserMedia API
+- **OCR processing**: WebAssembly support required for Tesseract
+- **Mobile browsers**: iOS Safari 11+, Chrome Mobile 60+
 
-#### Step 3: Enable GitHub Pages
-1. **Go to your repository** on GitHub.com
-2. **Click the "Settings" tab** (at the top of the repository page)
-3. **Scroll down** to find the "Pages" section in the left sidebar
-4. **In the Pages section:**
-   - Under "Source", select "Deploy from a branch"
-   - Under "Branch", select "main" (or "master" if that's your default)
-   - Under "Folder", select "/ (root)"
-   - Click "Save"
+## 🔍 Troubleshooting
 
-#### Step 4: Wait for Deployment
-- GitHub will show a message: "Your site is ready to be published at https://yourusername.github.io/Binary-Decoder-Website-Mockup/"
-- It may take 5-10 minutes for your site to go live
-- You'll get a green checkmark when it's ready
+### Common Issues
+1. **Camera not working**: Check HTTPS/localhost requirement
+2. **OCR accuracy**: Ensure good lighting and clear binary text
+3. **Mobile performance**: Reduce image resolution if processing is slow
+4. **File upload limits**: Browser may limit large image files
 
-#### Step 5: Test Your Live Website
-- Visit: `https://yourusername.github.io/Binary-Decoder-Website-Mockup/`
-- Share this URL or generate a QR code for it!
-
-#### Common GitHub Pages Issues:
-- **404 Error:** Make sure `index.html` is in the root folder
-- **Site not updating:** Changes can take 5-10 minutes to appear
-- **Can't find Pages setting:** Repository must be public
-- **Build failed:** Check that all file names are correct and no special characters
-
-### Method 2: Manual Deployment with gh-pages
-
-```bash
-npm run deploy
-```
-
-### Method 3: Other Hosting Platforms
-
-**Netlify:**
-1. Drag and drop the project folder to [netlify.com/drop](https://app.netlify.com/drop)
-2. Your site will be live instantly with a custom URL
-
-**Vercel:**
-1. Install Vercel CLI: `npm i -g vercel`
-2. Run: `vercel --prod`
-3. Follow the prompts
-
-## 📱 Generate QR Code
-
-To create a QR code for your deployed website:
-
-```bash
-npm run generate-qr
-```
-
-This creates:
-- `qr-code.png` - PNG image
-- `qr-code.svg` - SVG vector image
-
-**Note:** Update the URL in `generate-qr.js` with your actual deployment URL before running.
-
-## 🔧 Project Structure
-
-```
-Binary-Decoder-Website-Mockup/
-├── index.html              # Main landing page
-├── take-photo.html         # Camera capture page
-├── insert-photo.html       # File upload page
-├── scan-camera.html        # Live camera scanning
-├── text-input.html         # Manual text input
-├── style.css              # Main stylesheet
-├── binary-decoder.js      # Core functionality
-├── package.json           # Project configuration
-├── generate-qr.js         # QR code generator
-├── qr-code.png           # Generated QR code (PNG)
-├── qr-code.svg           # Generated QR code (SVG)
-└── .github/
-    └── workflows/
-        └── deploy.yml     # Auto-deployment workflow
-```
-
-## 📝 Notes
-
-- Camera access requires HTTPS in production (GitHub Pages provides this automatically)
-- The website is fully responsive and works on mobile devices
-- OCR functionality uses Tesseract.js for client-side text recognition
-- All processing happens in the browser - no server required
-
-## 🐛 Troubleshooting
-
-- **Camera not working:** Ensure you're accessing via HTTPS and have granted camera permissions
-- **Deployment fails:** Check that your repository is public and GitHub Pages is enabled
-- **QR code generation fails:** Make sure you've run `npm install` and updated the URL in `generate-qr.js`
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit changes: `git commit -m 'Add feature'`
-4. Push to branch: `git push origin feature-name`
-5. Submit a pull request
+### Debug Information
+- Console logging for OCR results and processing steps
+- Error messages displayed to users for failed operations
+- Network tab shows Tesseract.js loading progress
+- Camera permissions visible in browser security indicators

@@ -7,24 +7,48 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-        body {
-            background: linear-gradient(to bottom, #A8A8A8 0%, #4e4e4e 100%);
-            min-height: 100vh;
+        html, body {
+            background: linear-gradient(to bottom, #A8A8A8 0%, #4e4e4e 100%) !important;
+            min-height: 100vh !important;
+            position: relative !important;
+            color: white !important;
+        }
+        
+        /* Binary background image */
+        #binaryBackground {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+            background-image: url('binary-background.png');
+            background-size: 250% !important;
+            background-position: center center !important;
+            background-repeat: no-repeat;
+            opacity: 0.3;
+        }
+        
+        /* Ensure content is above background */
+        header, .description, .selection-menu {
             position: relative;
+            z-index: 2;
         }
         
         /* Orange button styling */
         .option-btn, .back-btn, #captureBtn {
             color: #F56600 !important;
             border: 2px solid #F56600 !important;
-            background-color: white
+            background-color: white !important;
         }
         
         .option-btn:hover, .back-btn:hover, #captureBtn:hover {
             background-color: #F56600 !important;
             color: white !important;
         }
-        
+         
         button {
             color: #F56600;
             border: 2px solid #F56600;
@@ -35,15 +59,28 @@
             background-color: #F56600;
             color: white;
         }
+
+        /* Ensure header text is white, description text is black */
+        h1 {
+            color: white !important;
+        }
+        
+        .description p, .description p strong {
+            color: black !important;
+        }
+        
+        @media (max-width: 900px) {
+            /* Remove header styling - let CSS file handle it */
+        }
     </style>
 </head>
 <body> 
     <!-- Binary Background Pattern -->
-    <div id="binaryBackground" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; font-family: monospace; font-size: 14px; line-height: 16.8px; color: rgba(255, 255, 255, 0.15); padding: 20px; overflow: hidden; white-space: pre-wrap; word-wrap: break-word;"></div>
+    <div id="binaryBackground"></div>
 
     <header>
-        <h1>Binary Decoder Mockup</h1>
-    </header>
+        <h1>Binary Decoder</h1>
+    </header> 
     <div class="description">
         <p>
             A versatile binary decoder that converts binary code to ASCII text using multiple input methods.

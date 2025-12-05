@@ -1,8 +1,8 @@
 const QRCode = require('qrcode');
 const fs = require('fs');
 
-// Replace with your actual GitHub Pages URL
-const websiteUrl = 'https://jlokerson.github.io/Binary-Decoder-Website-Mockup/';
+// Deployed application URL
+const websiteUrl = 'https://wfic-util-01.clemson.edu/decoder/';
 
 async function generateQRCode() {
     try {
@@ -12,17 +12,17 @@ async function generateQRCode() {
             width: 300,
             margin: 2,
             color: {
-                dark: '#F56600',  // Orange color to match your theme
+                dark: '#000000ff',  
                 light: '#FFFFFF'
             }
-        });
+        }); 
         
         // Generate QR code as PNG
         await QRCode.toFile('qr-code.png', websiteUrl, {
             width: 300,
             margin: 2,
             color: {
-                dark: '#F56600',
+                dark: '#000000ff',
                 light: '#FFFFFF'
             }
         });

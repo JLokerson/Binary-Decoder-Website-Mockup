@@ -2,40 +2,175 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Text Input - Binary Decoder</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
     <style>
-        body {
-            background: linear-gradient(to bottom, #A8A8A8 0%, #4e4e4e 100%);
-            min-height: 100vh;
-            position: relative;
+        html, body {
+            background: linear-gradient(to bottom, #A8A8A8 0%, #4e4e4e 100%) !important;
+            min-height: 100vh !important;
+            position: relative !important;
+            color: white !important;
         }
         
+        /* Smaller description box with black text */
+        .description {
+            max-width: 400px !important;
+            font-size: 1em !important;
+            padding: 0.8em !important;
+        }
+        
+        .description p, .description p strong {
+            color: black !important;
+        }
+        
+        /* Make decoded text black but keep label white */
+        #decodedText {
+            color: black !important;
+            width: 100% !important;
+            height: 150px !important;
+            min-height: 150px !important;
+            max-height: 150px !important;
+            overflow: auto !important;
+            resize: none !important;
+            box-sizing: border-box !important;
+        }
+        
+        /* Override output-area to match description box styling */
+        .output-area {
+            margin: 2em auto !important;
+            max-width: 320px !important;
+            width: 320px !important;
+            min-width: 320px !important;
+            background: #fff !important;
+            padding: 0.8em !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+            font-size: 1em !important;
+            min-height: auto !important;
+            max-height: none !important;
+            border: none !important;
+            display: block !important;
+            flex-direction: initial !important;
+            align-items: initial !important;
+            justify-content: initial !important;
+            flex-shrink: 0 !important;
+            flex-grow: 0 !important;
+            box-sizing: border-box !important;
+        }
+        
+        .output-area strong {
+            color: black !important;
+        }
+        
+        /* Make header same height as index page but empty */
+        header {
+            min-height: 120px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        /* Center buttons below description and make them smaller */
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin: 20px auto;
+            max-width: 400px;
+        }
+        
+        /* Orange button styling - smaller size */
         .back-btn {
             color: #F56600 !important;
             border: 2px solid #F56600 !important;
             background-color: white !important;
+            padding: 12px 24px !important;
+            font-size: 16px !important;
+            min-width: 160px !important;
+            width: auto !important;
         }
         
         .back-btn:hover {
             background-color: #F56600 !important;
             color: white !important;
         }
-    </style>
-</head>
-<body>
-    <!-- Binary Background Pattern -->
-    <div id="binaryBackground" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; font-family: monospace; font-size: 14px; color: rgba(255, 255, 255, 0.15); line-height: 1.2; padding: 20px; overflow: hidden; white-space: pre-wrap; word-wrap: break-word;"></div>
 
+        /* Fix mobile centering for output area */
+        @media (max-width: 900px) {
+            header {
+                min-height: 80px !important;
+            }
+            
+            .button-container {
+                max-width: 300px;
+            }
+            
+            .description, .output-area {
+                max-width: 300px !important;
+                width: 300px !important;
+                min-width: 300px !important;
+                margin: 1em auto !important;
+            }
+            
+            .main-area {
+                padding: 0 10px !important;
+                margin: 1em auto !important;
+            }
+            
+            .main-area > div {
+                text-align: center !important;
+            }
+            
+            #decodedText {
+                height: 120px !important;
+                min-height: 120px !important;
+                max-height: 120px !important;
+            }
+            
+            #binaryTextInput {
+                width: 95vw !important;
+                min-width: 0 !important;
+                max-width: 300px !important;
+                height: 200px !important;
+                font-size: 12px !important;
+            }
+            
+            div[style*="width: 60%"] {
+                width: 100% !important;
+                min-width: 0 !important;
+                display: flex;
+                justify-content: center;
+            }
+        }
+
+        /* Ensure text is white except description and decoded text */
+        div:not(.description *):not(.output-area *), span:not(.description *):not(.output-area *), strong:not(.description *):not(.output-area *), label {
+            color: white !important;
+        }
+    </style>
+</head> 
+<body>
     <header>
-        <h1>Text Input - Binary Decoder</h1>
+        <!-- Empty header to maintain grey banner -->
     </header>
+    
+    <div class="description">
+        <p>
+            <strong>Text Input</strong><br>
+            Enter binary code directly and see it decoded in real-time. Type binary in 8-bit groups separated by spaces for best results.
+        </p>
+    </div>
+
+    <div class="button-container">
+        <button class="back-btn" onclick="window.location.href='index.html'">Back to Menu</button>
+    </div>
 
     <div class="main-area">
-        <button class="back-btn" onclick="window.location.href='index.html'">Back to Menu</button>
         <div class="side-by-side">
-            <div class="image-area" style="width: 60%; min-width: 500px;">
+            <div style="width: 60%; min-width: 500px;">
                 <div style="width: 100%;">
                     <label for="binaryTextInput" style="font-size:1.2em; font-weight:bold; display:block; margin-bottom:8px; color:white;">Enter Binary Code:</label>
                     <textarea id="binaryTextInput" placeholder="Enter binary code here (e.g., 01001000 01100101 01101100 01101100 01101111)" 
@@ -45,7 +180,7 @@
                     </div>
                 </div>
             </div>
-            <div class="output-area" style="width: 40%; min-width: 400px; align-items: flex-start; justify-content: flex-start; padding-top: 1em;">
+            <div class="output-area">
                 <strong style="font-size:0.9em; margin-bottom: 2px;">Decoded Text:</strong>
                 <pre id="decodedText" style="font-size:0.9em; margin-top: -10px;">// Enter binary code in the text area...</pre>
             </div>
